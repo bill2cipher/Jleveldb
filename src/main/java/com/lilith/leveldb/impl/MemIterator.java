@@ -1,5 +1,5 @@
 package com.lilith.leveldb.impl;
 
-public class Arena {
+public class MemIterator {
 
 }

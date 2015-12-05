@@ -3,8 +3,6 @@ package com.lilith.leveldb.util;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.lilith.leveldb.impl.Arena;
-
 
 public class SkipList<Key, Cmp extends Comparator<Key>> {
   private final Node header;
@@ -29,6 +27,10 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     for (int i = 0; i < MAX_HEIGHT; i++) header.SetNext(i, null);
   }
   
+  /**
+   * Must external synchronized
+   * @param key
+   */
   public void Insert(Key key) {
     Node[] prev = (SkipList<Key, Cmp>.Node[]) new Object[MAX_HEIGHT];
     Node x = FindGreaterOrEqual(key, prev);
@@ -90,7 +92,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     Node x = header;
     int level = GetMaxHeight() - 1;
     while (true) {
-      Node next = x.Next(level);
+      Node next = x.NextSync(level);
       if (KeyIsAfterNode(key, next)) {
         x = next;
       } else {
@@ -108,7 +110,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     Node x = header;
     int level = GetMaxHeight() - 1;
     while (true) {
-      Node next = x.Next(level);
+      Node next = x.NextSync(level);
       if (next == null || compare.compare(next.key, key) >= 0) {
         if (level == 0) return x;
         else level--;
@@ -124,7 +126,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     Node x = header;
     int level = GetMaxHeight() - 1;
     while (true) {
-      Node next = x.Next(level);
+      Node next = x.NextSync(level);
       if (next == null) level--;
       if (level < 0) return x;
       x = next;
@@ -146,7 +148,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     
     // advances to the next position
     public void Next() {
-      node = node.Next(0);
+      node = node.NextSync(0);
     }
     
     // advances to the previous position
@@ -162,7 +164,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     
     // Position at the first entry in the list.
     public void SeekToFirst() {
-      node = header.Next(0);
+      node = header.NextSync(0);
     }
     
     // Position at the last entry in the list
@@ -190,11 +192,23 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     // accessors/mutators for links. Wrapped in methods so we can
     // make it multi-thread safe.
     public Node Next(int n) {
-      return null;
+      return next[n];
+    }
+    
+    public Node NextSync(int n) {
+    	synchronized(next[n]) {
+    		return next[n];
+    	}
     }
     
     public void SetNext(int n, Node node) {
       next[n] = node;
+    }
+    
+    public void SetNextSync(int n, Node node) {
+    	synchronized(next[n]) {
+    		next[n] = node;
+    	}
     }
   }
  
