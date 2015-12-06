@@ -62,8 +62,8 @@ public class Slice implements Comparable<Slice> {
     return data;
   }
 
-  public int compareTo(Slice slice) {
-    return GetData().toString().compareTo(slice.GetData().toString());
+  public int compareTo(Slice s) {
+    return BinaryUtil.CompareBytes(data, offset, length, s.data, s.offset, s.length);
   }
 }
 

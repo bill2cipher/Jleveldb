@@ -13,6 +13,6 @@ public interface Settings {
   public static int NO_FILTER_POLICY = 1;
   public static int BLOOM_FILTER_POLICY = 2;
   
-  public static int OP_TYPE_VALUE = 1;
-  public static int OP_TYPE_DELETE = 2;
+  public static byte OP_TYPE_VALUE = 1;
+  public static byte OP_TYPE_DELETE = 2;
 }

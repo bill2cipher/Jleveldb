@@ -58,4 +58,16 @@ public class BinaryUtil {
       dst[j + dst_offset] = src[i + src_offset];
     }
   }
+  
+  public static int CompareBytes(byte[] first, int f_offset, int f_size, byte[] second, int s_offset, int s_size) {
+    int min_len = f_size > s_size ? s_size : f_size;
+    for (int i = 0; i < min_len; i++) {
+      if (first[i + f_offset] == second[i + s_offset]) continue;
+      if (first[i + f_offset] < second[i + s_offset]) return -1;
+      return 1;
+    }
+    if (f_size == s_size) return 0;
+    if (f_size <  s_size) return -1;
+    return 1;
+  }
 }

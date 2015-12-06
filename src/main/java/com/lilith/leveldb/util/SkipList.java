@@ -100,7 +100,6 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
         if (level == 0) return next;
         else level--;
       }
-     
     }
   }
   
