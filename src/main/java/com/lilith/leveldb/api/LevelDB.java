@@ -1,11 +1,16 @@
 package com.lilith.leveldb.api;
 
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+
+import com.lilith.leveldb.impl.LevelDBImpl;
 import com.lilith.leveldb.impl.SnapShot;
 import com.lilith.leveldb.impl.WriteBatch;
 import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Range;
 import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.WriteOptions;
+import com.lilith.leveldb.version.VersionEdit;
 
 /**
  * A leveldb is a persistent ordered map from keys to values.
@@ -20,7 +25,14 @@ public abstract class LevelDB {
    * @param name
    * @return
    */
-  public static LevelDB Open(Options options, String name) {
+  public static LevelDB Open(Options options, String dbname) {
+    LevelDBImpl impl = new LevelDBImpl(options, dbname);
+    VersionEdit edit = new VersionEdit();
+    boolean result = impl.Recover(edit);
+    if (result == true) {
+      long log_number = impl.NewFileNumber();
+      DataOutputStream log_writer = new DataOutputStream(new FileOutputStream(dbname));
+    }
     return null;
   }
   

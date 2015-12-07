@@ -5,10 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.BinaryUtil;
-import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Settings;
 import com.lilith.leveldb.util.SkipList;
-import com.lilith.leveldb.table.Table;
 /**
  * Storing key/value pairs in the memory.
  * @author Administrator

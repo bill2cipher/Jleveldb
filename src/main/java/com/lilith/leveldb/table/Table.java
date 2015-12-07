@@ -2,8 +2,6 @@ package com.lilith.leveldb.table;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Iterator;
-
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.DecodeFailedException;
 
