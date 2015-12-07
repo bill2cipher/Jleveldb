@@ -7,6 +7,10 @@ package com.lilith.leveldb.util;
  */
 public class BinaryUtil {
   
+  public static boolean PutVarint16(byte[] buffer, int offset, int value) {
+    return PutVarint(Settings.UINT16_SIZE, buffer, offset, value);
+  }
+  
   /**
    * Encode the value which is int32 into buffer, starting at index offset, in little-endien
    */

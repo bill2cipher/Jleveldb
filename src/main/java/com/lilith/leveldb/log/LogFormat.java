@@ -54,4 +54,6 @@ public class LogFormat {
   public static final int BLOCK_SIZE = 32768;
   
   public static final int HEADER_SIZE = 4 + 2 + 1;
+  
+  public static final byte[] ZERO_BYTES = {0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00};
 }

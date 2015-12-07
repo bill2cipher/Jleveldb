@@ -1,6 +1,8 @@
 package com.lilith.leveldb.util;
 
 public interface Settings {
+  
+  public static int UINT16_SIZE = 2;
   public static int UINT32_SIZE = 4;
   public static int UINT64_SIZE = 8;
   public static int BYTE_SIZE = 8;
