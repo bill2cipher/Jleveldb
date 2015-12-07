@@ -38,6 +38,13 @@ public class BinaryUtil {
   /**
    * Decode the value which is int32 from buffer, starting at offset, in little-endien
    */
+  public static int DecodeVarint16(byte[] value, int offset) {
+    return (int)(0XFFFF & DecodeVarint(Settings.UINT16_SIZE, value, offset));
+  }
+  
+  /**
+   * Decode the value which is int32 from buffer, starting at offset, in little-endien
+   */
   public static int DecodeVarint32(byte[] value, int offset) {
     return (int)(0XFFFFFFFF & DecodeVarint(Settings.UINT32_SIZE, value, offset));
   }
@@ -51,8 +58,8 @@ public class BinaryUtil {
   
   private static long DecodeVarint(int bytes, byte[] value, int offset) {
     int result = 0;
-    for (int i = offset; i < bytes; i++) {
-      result |= value[i];
+    for (int i = 0; i < bytes; i++) {
+      result |= value[i + offset] << (Settings.BYTE_SIZE * i);
     }
     return result;
   }

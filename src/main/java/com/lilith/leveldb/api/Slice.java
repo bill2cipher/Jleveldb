@@ -46,6 +46,24 @@ public class Slice implements Comparable<Slice> {
     return offset + value.GetLength();
   }
   
+  public void SetContent(byte[] data, int offset, int length) {
+    this.data = data;
+    this.offset = offset;
+    this.length = length;
+  }
+  
+  public void SetContent(byte[] data, int offset) {
+    this.data = data;
+    this.offset = offset;
+    this.length = data.length - offset;
+  }
+  
+  public void SetContent(byte[] data) {
+    this.data = data;
+    this.length = data.length;
+    this.offset = 0;
+  }
+  
   public final byte GetAt(int index) {
     return data[index + offset];
   }

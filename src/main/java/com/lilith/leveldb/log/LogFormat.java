@@ -44,10 +44,11 @@ package com.lilith.leveldb.log;
  * 2. No compression.
  */
 public class LogFormat {
-  public static final byte FULL   = 0;
-  public static final byte FIRST  = 1;
-  public static final byte MIDDLE = 2;
-  public static final byte LAST   = 3;
+  public static final byte ZERO   = 0;
+  public static final byte FULL   = 1;
+  public static final byte FIRST  = 2;
+  public static final byte MIDDLE = 3;
+  public static final byte LAST   = 4;
   
   public static final byte MAX_RECORD_TYPE = LAST;
   
