@@ -82,9 +82,9 @@ public class LogReader {
         store.add(data);
         break;
       case BAD_RECORD:
-        break;
+        return null;
       case EOF:
-        break;
+        return null;
       }
     }
   }

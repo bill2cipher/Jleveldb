@@ -6,10 +6,13 @@ import java.io.FileOutputStream;
 import com.lilith.leveldb.impl.LevelDBImpl;
 import com.lilith.leveldb.impl.SnapShot;
 import com.lilith.leveldb.impl.WriteBatch;
+import com.lilith.leveldb.log.LogWriter;
+import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Range;
 import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.WriteOptions;
+import com.lilith.leveldb.version.Version;
 import com.lilith.leveldb.version.VersionEdit;
 
 /**
@@ -27,11 +30,19 @@ public abstract class LevelDB {
    */
   public static LevelDB Open(Options options, String dbname) {
     LevelDBImpl impl = new LevelDBImpl(options, dbname);
-    VersionEdit edit = new VersionEdit();
-    boolean result = impl.Recover(edit);
-    if (result == true) {
+    VersionEdit version_edit = impl.Recover();
+    if (version_edit != null) {
       long log_number = impl.NewFileNumber();
-      DataOutputStream log_writer = new DataOutputStream(new FileOutputStream(dbname));
+      DataOutputStream log_writer = new DataOutputStream(new FileOutputStream(FileName.MakeLogName(dbname, log_number)));
+      version_edit.SetLogNumber(log_number);
+      
+      impl.logfile = log_writer;
+      impl.logfile_num = log_number;
+      impl.log = new LogWriter(log_writer);
+      impl.version_set.LogAndApply(version_edit);
+      
+      impl.DeleteObsoleteFiles();
+      impl.MaybeScheduleCompaction();
     }
     return null;
   }

@@ -1,6 +1,7 @@
 package com.lilith.leveldb.version;
 
 import com.lilith.leveldb.api.Slice;
+import java.util.List;
 
 /**
  * A compaction encapsulates information about a compaction.
@@ -9,6 +10,10 @@ import com.lilith.leveldb.api.Slice;
 public class Compaction {
   private int level = 0;
   private VersionEdit edit = null;
+  private Version input_version = null;
+  private long max_output_file_size = 0;
+  private List<FileMetaData> inputs = null;          // Each compaction reads inputs from level and level + 1
+  private List<FileMetaData> grandparents = null;    // State used to check for number of overlapping grandparent files
   
   /**
    * Return the level that is being compacted. Inputs from "level" and 

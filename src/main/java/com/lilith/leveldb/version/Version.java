@@ -12,6 +12,8 @@ public class Version {
   private VersionSet vset = null;
   private Version next = null;
   private Version prev = null;
+  int compaction_score = 0;
+  FileMetaData file_to_compact = null;
   
   public Version(VersionSet vset) {
     this.vset = vset;

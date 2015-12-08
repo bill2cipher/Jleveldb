@@ -1,9 +1,16 @@
 package com.lilith.leveldb.version;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 
 import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.exceptions.BadFormatException;
+import com.lilith.leveldb.log.LogReader;
+import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
 
 public class VersionSet {
@@ -40,9 +47,63 @@ public class VersionSet {
   
   /**
    * Recover the last saved descriptor from persistent storage.
+   * @throws IOException 
+   * @throws BadFormatException 
    */
-  public void Recover() {
+  public void Recover() throws IOException, BadFormatException {
+    // Read "CURRENT" file, which contains a pointer to the current manifest file
+    byte[] buffer = new byte[1024];
+    DataInputStream cur_reader = new DataInputStream(new FileInputStream(FileName.CurrentFileName(dbname)));
+    int read_cnt = cur_reader.read(buffer, 0, 1024);
+    cur_reader.close();
+    if (buffer[read_cnt - 1] != '\n') throw new BadFormatException("CURRENT file does not end with newline");
     
+    
+    String descname = dbname + "/" + new String(buffer, 0, read_cnt - 1);
+    DataInputStream desc_reader = new DataInputStream(new FileInputStream(descname));
+
+    boolean have_log_num = false;
+    boolean have_prev_log_num = false;
+    boolean have_next_file = false;
+    boolean have_last_seq = false;
+    long next_file = 0;
+    long last_sq = 0;
+    long log_num = 0;
+    long prev_log_num = 0;
+    
+    LogReader reader = new LogReader(desc_reader, true, 0);
+    while (true) {
+      byte[] record = reader.ReadRecord();
+      if (record == null) break;
+      VersionEdit edit = new VersionEdit();
+      edit.DecodeFrom(record);
+      
+      builder.Apply(edit);
+      
+      if (edit.has_log_number) {
+        log_num = edit.log_num;
+        have_log_num = true;
+      }
+      
+      if (edit.has_prev_log_num) {
+        prev_log_num = edit.prev_log_num;
+        have_prev_log_num = true;
+      }
+      
+      if (edit.has_next_file_num) {
+        next_file_num = edit.next_file_num;
+        have_next_file = true;
+      }
+      
+      if (edit.has_last_seq) {
+        last_seq = edit.last_seq;
+        have_last_seq = true;
+      }
+    }
+    desc_reader.close();
+    
+    Version version = new Version(this);
+    builder.SaveTo(v);
   }
   
   /**

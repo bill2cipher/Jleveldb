@@ -24,7 +24,7 @@ public class MemTable {
   /**
    * Add an entry into memtble that maps key to value at the 
    * specified sequence number and with the specified type.
-   * typically value will be empty if type ==  TypeDeletion.
+   * typically value will be empty if type == TypeDeletion.
    * format of an entry is concatenation of :
    * key_size   : internal key size
    * key bytes  : bytes[internal_key_size]
