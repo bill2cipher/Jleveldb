@@ -12,15 +12,14 @@ public class VersionEdit {
   private ArrayList<SimpleEntry<Integer, FileMetaData>> new_files = null;
   
   private long log_num;
-  private long prev_log_num;
   private long next_file_num;
   private long last_seq;
   
-  private boolean has_comparator = false;
   private boolean has_log_num = false;
+  private boolean has_comparator = false;
   private boolean has_next_file_num = false;
   private boolean has_last_seq = false;
-    
+
   // Tag numbers for serialized VersionEdit. These numbers are written to disk
   // and should not be changed.
   private final static int Comparator     = 1;
@@ -33,7 +32,19 @@ public class VersionEdit {
   private final static int PrevLogNum     = 9;
   
   public void Clear() {
+    this.log_num = 0;
+    this.last_seq = 0;
+    this.next_file_num = 0;
     
+    this.has_comparator = false;
+    this.has_last_seq = false;
+    this.has_next_file_num = false;
+    this.has_log_num = false;
+    
+    comparator = "";
+    
+    deleted_files.clear();
+    new_files.clear();
   }
   
   public void SetComparatorName(String name) {
@@ -56,8 +67,8 @@ public class VersionEdit {
     this.last_seq = seq;
   }
   
-  public void SetCopmactionPointer(int level, Slice key) {
-    
+  public void SetCopmactionPointer(int level, InternalKey key) {
+    compact_pointers.add(new SimpleEntry<Integer, InternalKey>(level, key));
   }
   
   /**
