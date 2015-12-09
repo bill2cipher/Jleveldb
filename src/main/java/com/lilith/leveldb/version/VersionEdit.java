@@ -2,8 +2,11 @@ package com.lilith.leveldb.version;
 
 import java.util.ArrayList;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Iterator;
 
 import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.util.BinaryUtil;
+import com.lilith.leveldb.util.Settings;
 
 public class VersionEdit {
   private String comparator;
@@ -74,7 +77,7 @@ public class VersionEdit {
   /**
    * Add the specified file at the specified number.
    */
-  public void AddFile(int level, long file, int file_size, Slice smallest, Slice largest) {
+  public void AddFile(int level, long file, int file_size, InternalKey smallest, InternalKey largest) {
     FileMetaData file_meta = new FileMetaData();
     file_meta.file_size = file_size;
     file_meta.number = file;
@@ -92,6 +95,91 @@ public class VersionEdit {
   }
   
   public Slice EncodeTo() {
-    return null;
+    byte[] buffer = new byte[GetApproximateSize()];
+    int offset = 0;
+    if (has_comparator) {
+      byte[] comp_content = comparator.getBytes();
+      BinaryUtil.PutVarint32(buffer, offset, Comparator);
+      BinaryUtil.PutVarint32(buffer, offset + Settings.UINT32_SIZE, comp_content.length);
+      BinaryUtil.CopyBytes(comp_content, 0, comp_content.length, buffer, offset + Settings.UINT32_SIZE * 2);
+      offset += comp_content.length + Settings.UINT32_SIZE * 2;
+    }
+    
+    if (has_log_num) {
+      BinaryUtil.PutVarint32(buffer, offset, LogNumber);
+      BinaryUtil.PutVarint64(buffer, offset + Settings.UINT32_SIZE, log_num);
+      offset += Settings.UINT32_SIZE + Settings.UINT64_SIZE;
+    }
+    
+    if (has_next_file_num) {
+      BinaryUtil.PutVarint32(buffer, offset, NextFileNum);
+      BinaryUtil.PutVarint64(buffer, offset + Settings.UINT32_SIZE, next_file_num);
+      offset += Settings.UINT32_SIZE + Settings.UINT64_SIZE;
+    }
+    
+    if (has_last_seq) {
+      BinaryUtil.PutVarint32(buffer, offset, LastSeq);
+      BinaryUtil.PutVarint64(buffer, offset + Settings.UINT32_SIZE, last_seq);
+      offset += Settings.UINT32_SIZE + Settings.UINT64_SIZE;
+    }
+    
+    for (int i = 0; i < compact_pointers.size(); i++) {
+      BinaryUtil.PutVarint32(buffer, offset, CompactPointer);
+      BinaryUtil.PutVarint32(buffer, offset + Settings.UINT32_SIZE, compact_pointers.get(i).getKey());
+      Slice key = compact_pointers.get(i).getValue().Encode();
+      BinaryUtil.CopyBytes(key.GetData(), key.GetOffset(), key.GetLength(), buffer, offset + Settings.UINT32_SIZE * 2);
+      offset += Settings.UINT32_SIZE * 2 + key.GetLength();
+    }
+    
+    Iterator<SimpleEntry<Integer, Long>> del_iter = deleted_files.iterator();
+    while (del_iter.hasNext()) {
+      SimpleEntry<Integer, Long> val = del_iter.next();
+      BinaryUtil.PutVarint32(buffer, offset, DeletedFile);
+      BinaryUtil.PutVarint32(buffer, offset + Settings.UINT32_SIZE, val.getKey());
+      BinaryUtil.PutVarint64(buffer, offset + Settings.UINT32_SIZE * 2, val.getValue());
+      offset += Settings.UINT32_SIZE * 2 + Settings.UINT64_SIZE;
+    }
+  
+    Iterator<SimpleEntry<Integer, FileMetaData>> add_iter = new_files.iterator();
+    while (add_iter.hasNext()) {
+      SimpleEntry<Integer, FileMetaData> entry = add_iter.next();
+      BinaryUtil.PutVarint32(buffer, offset, NewFile); offset += Settings.UINT32_SIZE;
+      BinaryUtil.PutVarint32(buffer, offset, entry.getKey()); offset += Settings.UINT32_SIZE;
+      BinaryUtil.PutVarint64(buffer, offset, entry.getValue().number); offset += Settings.UINT64_SIZE;
+      BinaryUtil.PutVarint64(buffer, offset, entry.getValue().file_size); offset += Settings.UINT64_SIZE;
+      
+      Slice small = entry.getValue().smallest.Encode();
+      BinaryUtil.PutVarint32(buffer, offset, small.GetLength()); offset += Settings.UINT32_SIZE;
+      BinaryUtil.CopyBytes(small.GetData(), small.GetOffset(), small.GetLength(), buffer, offset);
+      
+      Slice large = entry.getValue().largest.Encode();
+      BinaryUtil.PutVarint32(buffer, offset, large.GetLength()); offset += Settings.UINT32_SIZE;
+      BinaryUtil.CopyBytes(large.GetData(), large.GetOffset(), large.GetLength(), buffer, offset);
+    }
+    return new Slice(buffer);
+  }
+  
+  public int GetApproximateSize() {
+    int size = 0;
+    if (has_comparator) size += Settings.UINT32_SIZE;
+    if (has_log_num)    size += Settings.UINT32_SIZE;
+    if (has_next_file_num) size += Settings.UINT32_SIZE;
+    if (has_last_seq) size += Settings.UINT32_SIZE;
+    
+    for (int i = 0; i < compact_pointers.size(); i++) {
+      size += Settings.UINT32_SIZE * 3;
+      size += compact_pointers.get(i).getValue().GetInternalKeySize();
+    }
+    
+    size += (Settings.UINT32_SIZE * 2 + Settings.UINT64_SIZE) * deleted_files.size();
+    
+    Iterator<SimpleEntry<Integer, FileMetaData>> add_iter = new_files.iterator();
+    while (add_iter.hasNext()) {
+      SimpleEntry<Integer, FileMetaData> entry = add_iter.next();
+      size += Settings.UINT32_SIZE * 2 + Settings.UINT64_SIZE * 2;
+      size += entry.getValue().largest.GetInternalKeySize() + Settings.UINT32_SIZE;
+      size += entry.getValue().smallest.GetInternalKeySize() + Settings.UINT32_SIZE;
+    }
+    return size;
   }
 }

@@ -39,6 +39,11 @@ public class Slice implements Comparable<Slice> {
     return new Slice(buffer, offset + Settings.UINT32_SIZE, size);
   }
   
+  public static int GetLengthPrefixSize(byte[] buffer, int offset) {
+    int size = BinaryUtil.DecodeVarint32(buffer, offset);
+    return size + Settings.UINT32_SIZE;
+  }
+  
   public static int EncodeLengthPrefix(byte[] buffer, int offset, Slice value) {
     BinaryUtil.PutVarint32(buffer, offset, value.GetLength());
     offset += Settings.UINT32_SIZE;
