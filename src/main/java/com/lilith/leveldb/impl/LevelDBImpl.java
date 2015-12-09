@@ -173,7 +173,7 @@ public class LevelDBImpl extends LevelDB {
   
   private void InitializeDB() throws IOException {
     VersionEdit edit = new VersionEdit();
-    edit.SetComparatorName(new Slice("".getBytes()));
+    edit.SetComparatorName(InternalKeyComparator.GetName());
     edit.SetLogNumber(0);
     edit.SetNextFile(2);
     edit.SetLastSequence(0);

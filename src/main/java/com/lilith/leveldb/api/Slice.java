@@ -10,6 +10,33 @@ public class Slice implements Comparable<Slice> {
   
   public final static Slice EmptySlice = new Slice(new byte[0], 0, 0); 
   
+  public static Slice DecodeLengthPrefix(byte[] buffer, int offset) {
+    int size = BinaryUtil.DecodeVarint32(buffer, offset);
+    return new Slice(buffer, offset + Settings.UINT32_SIZE, size);
+  }
+  
+  public static int GetLengthPrefixSize(byte[] buffer, int offset) {
+    int size = BinaryUtil.DecodeVarint32(buffer, offset);
+    return size + Settings.UINT32_SIZE;
+  }
+  
+  public static int EncodeLengthPrefix(byte[] buffer, int offset, Slice value) {
+    BinaryUtil.PutVarint32(buffer, offset, value.GetLength());
+    offset += Settings.UINT32_SIZE;
+    BinaryUtil.CopyBytes(value.GetData(), value.GetOffset(), value.GetLength(), buffer, offset);
+    return offset + value.GetLength();
+  }
+  
+  public static Slice GetLengthPrefix(Slice data) {
+    int length = BinaryUtil.DecodeVarint32(data.GetData(), data.GetOffset());
+    return new Slice(data.GetData(), data.GetOffset() + Settings.UINT32_SIZE, length);
+  }
+  
+  public static Slice GetLengthPrefix(byte[] data, int offset) {
+    int length = BinaryUtil.DecodeVarint32(data, offset);
+    return new Slice(data, offset + length, length);
+  }
+  
   public Slice(int length) {
     this.length = length;
     this.data = new byte[length];
@@ -32,23 +59,6 @@ public class Slice implements Comparable<Slice> {
     this.data = data;
     this.offset = offset;
     this.length = length;
-  }
-  
-  public static Slice DecodeLengthPrefix(byte[] buffer, int offset) {
-    int size = BinaryUtil.DecodeVarint32(buffer, offset);
-    return new Slice(buffer, offset + Settings.UINT32_SIZE, size);
-  }
-  
-  public static int GetLengthPrefixSize(byte[] buffer, int offset) {
-    int size = BinaryUtil.DecodeVarint32(buffer, offset);
-    return size + Settings.UINT32_SIZE;
-  }
-  
-  public static int EncodeLengthPrefix(byte[] buffer, int offset, Slice value) {
-    BinaryUtil.PutVarint32(buffer, offset, value.GetLength());
-    offset += Settings.UINT32_SIZE;
-    BinaryUtil.CopyBytes(value.GetData(), value.GetOffset(), value.GetLength(), buffer, offset);
-    return offset + value.GetLength();
   }
   
   public void SetContent(byte[] data, int offset, int length) {

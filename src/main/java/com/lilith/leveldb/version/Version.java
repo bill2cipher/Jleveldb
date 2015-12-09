@@ -4,21 +4,37 @@ import java.util.ArrayList;
 
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.ReadOptions;
+import com.lilith.leveldb.util.Settings;
 
 public class Version {
   
-  private ArrayList<ArrayList<FileMetaData>> files = null;
+  // List of files per level.
+  private ArrayList<FileMetaData>[] files = null;
   
   private VersionSet vset = null;
   private Version next = null;
   private Version prev = null;
+  
+  // level should be compacted next and its compaction score. Score < 1 means
+  // compaction is not strictly needed.
   int compaction_score = 0;
-  FileMetaData file_to_compact = null;
+  int compaction_level = 0;
+  
+  // next file to compact based on seek states
+  private FileMetaData file_to_compact = null;
+  private int file_to_compact_level = 0;
   
   public Version(VersionSet vset) {
     this.vset = vset;
     this.next = this;
     this.prev = this;
+    this.file_to_compact = null;
+    this.file_to_compact_level = -1;
+    this.compaction_level = -1;
+    this.compaction_score = -1;
+    
+    this.files = (ArrayList<FileMetaData>[]) new Object[Settings.NUM_LEVELS];
+    for (int i = 0; i < files.length; i++) files[i] = new ArrayList<FileMetaData>();
   }
   
   /**
