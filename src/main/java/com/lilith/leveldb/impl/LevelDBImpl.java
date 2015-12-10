@@ -19,6 +19,7 @@ import com.lilith.leveldb.util.Range;
 import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.Util;
 import com.lilith.leveldb.util.WriteOptions;
+import com.lilith.leveldb.version.InternalKeyComparator;
 import com.lilith.leveldb.version.Version;
 import com.lilith.leveldb.version.VersionSet;
 import com.lilith.leveldb.version.VersionEdit;
@@ -110,7 +111,7 @@ public class LevelDBImpl extends LevelDB {
     if (!Util.CreateDir(dbname)) return null;
     if (!Util.FileExists(FileName.CurrentFileName(dbname))) {
       if (options.creat_if_missing) {
-        
+        InitializeDB();
       } else {
         return null;
       }
@@ -173,7 +174,7 @@ public class LevelDBImpl extends LevelDB {
   
   private void InitializeDB() throws IOException {
     VersionEdit edit = new VersionEdit();
-    edit.SetComparatorName(InternalKeyComparator.GetName());
+    edit.SetComparatorName(InternalKeyComparator.ComparatorName());
     edit.SetLogNumber(0);
     edit.SetNextFile(2);
     edit.SetLastSequence(0);

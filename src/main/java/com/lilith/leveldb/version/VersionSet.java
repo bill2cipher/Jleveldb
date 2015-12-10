@@ -10,31 +10,49 @@ import java.util.List;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.log.LogReader;
+import com.lilith.leveldb.log.LogWriter;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
+import  com.lilith.leveldb.util.Settings;
 
 public class VersionSet {
-  private String dbname = null;
+  private String dbname = null;          // db this version set associate with
   
   private Options options = null;        // options for db versionset
   private TableCache table_cache = null; // used for cache table content
+  
+  private InternalKeyComparator icmp = null;
   
   private long manifest_file_num = 0;    // unique id for current descriptor
   private long next_file_num     = 0;    // unique id for table file
   private long last_sequence     = 0;    // sequence number for write batch
   private long log_num           = 0;    // unique id for log file
-  private long prev_log_num      = 0;    // 0 or backing store for memtable being compacted
   
   private Version header = null;         // head of circular doubly-linked list of versions.
   private Version current = null;        // == header.prev
   
-  private DataOutputStream desc_file_writer = null;
-  private DataOutputStream desc_log_writer  = null;
+  private LogWriter descriptor_file = null;
+  private DataOutputStream descriptor_log = null;  // the file associate with desc_writer
   
-  public VersionSet(String dbname, Options options, TableCache table_cache) {
-    this.current = null;
+  private String[] compact_pointer = new String[Settings.NUM_LEVELS];
+  
+  
+  public VersionSet(String dbname, Options options, TableCache table_cache, InternalKeyComparator icmp) {
+    this.dbname = dbname;
     this.options = options;
     this.table_cache = table_cache;
+    this.icmp = icmp;
+    
+    this.next_file_num = 2;
+    this.manifest_file_num = 0;
+    this.last_sequence = 0;
+    this.log_num = 0;
+    
+    this.descriptor_file = null;
+    this.descriptor_log = null;
+    
+    this.current = null;
+    this.header = new Version(this);
   }
   
   /**
