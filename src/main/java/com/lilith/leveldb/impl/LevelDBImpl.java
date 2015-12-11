@@ -203,17 +203,21 @@ public class LevelDBImpl extends LevelDB {
     LogReader log_reader = new LogReader(reader, true, 0);
     byte[] record = null;
     WriteBatch batch = new WriteBatch(0);
+    long max_seq = 0;
     
     while (true) {
       record = log_reader.ReadRecord();
       if (record == null) break;
       if (record.length < 12) throw new BadFormatException("record size too small");
       batch.SetContents(new Slice(record));
+
+      if (mem == null) {
+        mem = new MemTable(internal_comparator);
+      }
+      batch.InsertInto(mem);
+      long last_seq = batch.Sequence() + batch.Count() - 1;
+      if (last_seq > max_seq) max_seq = last_seq;
     };
-    
-    if (mem == null) {
-      mem = new MemTable(internal_comparator);
-    }
   }
   
   /**

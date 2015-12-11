@@ -7,7 +7,6 @@ import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
 import com.lilith.leveldb.util.SkipList;
-import com.lilith.leveldb.version.InternalKey;
 import com.lilith.leveldb.version.InternalKeyComparator;
 /**
  * Storing key/value pairs in the memory.
@@ -15,11 +14,27 @@ import com.lilith.leveldb.version.InternalKeyComparator;
  *
  */
 public class MemTable {
-  private SkipList<InternalKey, InternalKeyComparator> table = null;
+  private SkipList<Slice, KeyComparator> table = null;
   private AtomicInteger size = null;
+  private KeyComparator comp = null;
+  
+  private class KeyComparator implements Comparator<Slice> {
+    private InternalKeyComparator internal_comparator = null;
+    public KeyComparator(InternalKeyComparator internal_comparator) {
+      this.internal_comparator = internal_comparator;
+    }
+    
+    public int compare(Slice fval, Slice sval) {
+      Slice fval2 = Slice.GetLengthPrefix(fval);
+      Slice sval2 = Slice.GetLengthPrefix(sval);
+      return internal_comparator.compare(fval2, sval2);
+    }
+    
+  }
   
   public MemTable(InternalKeyComparator cmp) {
-    table = new SkipList<InternalKey, InternalKeyComparator>(cmp);
+    comp = new KeyComparator(cmp);
+    table = new SkipList<Slice, KeyComparator>(comp);
     size = new AtomicInteger(0);
   }
   
@@ -75,7 +90,7 @@ public class MemTable {
    * if memtable contains a deletion for key, return null.
    */
   public Slice Get(Slice lookup) {
-    SkipList<Slice, Comparator<Slice>>.Iterator iter = table.new Iterator();
+    SkipList<Slice, KeyComparator>.Iterator iter = table.new Iterator();
     iter.Seek(lookup);
     if (iter.Valid()) {
       Slice entry = iter.Key();
