@@ -11,18 +11,18 @@ import com.lilith.leveldb.util.Settings;
 
 public class VersionEdit {
   private String comparator;
-  private ArrayList<SimpleEntry<Integer, Long>> deleted_files = null;
-  private ArrayList<SimpleEntry<Integer, InternalKey>> compact_pointers = null;
-  private ArrayList<SimpleEntry<Integer, FileMetaData>> new_files = null;
+  ArrayList<SimpleEntry<Integer, Long>> deleted_files = null;
+  ArrayList<SimpleEntry<Integer, InternalKey>> compact_pointers = null;
+  ArrayList<SimpleEntry<Integer, FileMetaData>> new_files = null;
   
-  private long log_num;
-  private long next_file_num;
-  private long last_seq;
+  long log_num;
+  long next_file_num;
+  long last_seq;
   
-  private boolean has_log_num = false;
-  private boolean has_comparator = false;
-  private boolean has_next_file_num = false;
-  private boolean has_last_seq = false;
+  boolean has_log_num = false;
+  boolean has_comparator = false;
+  boolean has_next_file_num = false;
+  boolean has_last_seq = false;
 
   // Tag numbers for serialized VersionEdit. These numbers are written to disk
   // and should not be changed.
@@ -78,12 +78,7 @@ public class VersionEdit {
    * Add the specified file at the specified number.
    */
   public void AddFile(int level, long file, int file_size, InternalKey smallest, InternalKey largest) {
-    FileMetaData file_meta = new FileMetaData();
-    file_meta.file_size = file_size;
-    file_meta.number = file;
-    file_meta.smallest = smallest;
-    file_meta.largest = largest;
-    
+    FileMetaData file_meta = new FileMetaData(file, file_size, smallest, largest);
     new_files.add(new SimpleEntry<Integer, FileMetaData>(level, file_meta));
   }
   
@@ -184,12 +179,11 @@ public class VersionEdit {
     return size;
   }
   
-  public void DecodeFrom(Slice input) throws BadFormatException {
+  public void DecodeFrom(byte[] data, int offset, int size) throws BadFormatException {
     Clear();
     
-    int end_of_input = input.GetOffset() + input.GetLength();
-    int cur_pos = input.GetOffset();
-    byte[] data = input.GetData();
+    int end_of_input = offset + size;
+    int cur_pos = offset;
     
     while (cur_pos < end_of_input) {
       int val_type = BinaryUtil.DecodeVarint32(data, cur_pos); cur_pos += Settings.UINT32_SIZE;
@@ -197,6 +191,10 @@ public class VersionEdit {
       if (data_len == -1) throw new BadFormatException("version edit parse error");
       cur_pos += data_len;
     }
+  }
+  
+  public void DecodeFrom(Slice input) throws BadFormatException  {
+    DecodeFrom(input.GetData(), input.GetOffset(), input.GetLength());
   }
   
   private int ParseContent(byte[] data, int offset, int val_type) {

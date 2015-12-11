@@ -7,7 +7,7 @@ import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
 
-public class InternalKeyComparator {
+public class InternalKeyComparator implements Comparator<InternalKey> {
   
   Comparator<Slice> user_comparator = null;
 
@@ -19,8 +19,8 @@ public class InternalKeyComparator {
     this.user_comparator = comp;
   }
   
-  public int Compare(InternalKey fkey, InternalKey skey) {
-    return Compare(fkey.Encode(), skey.Encode());
+  public int compare(InternalKey fkey, InternalKey skey) {
+    return compare(fkey.Encode(), skey.Encode());
   }
   
   /**
@@ -29,7 +29,7 @@ public class InternalKeyComparator {
    * 2. decreasing sequence number
    * 3. decreasing type
    */
-  public int Compare(Slice fkey, Slice skey) {
+  public int compare(Slice fkey, Slice skey) {
     int res = user_comparator.compare(InternalKey.ExtractUserKey(fkey)
                                     , InternalKey.ExtractUserKey(skey));
     if (res == 0) {

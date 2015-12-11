@@ -9,20 +9,20 @@ import com.lilith.leveldb.util.Settings;
 public class Version {
   
   // List of files per level.
-  private ArrayList<FileMetaData>[] files = null;
+  ArrayList<FileMetaData>[] files = null;
   
   private VersionSet vset = null;
-  private Version next = null;
-  private Version prev = null;
+  Version next = null;
+  Version prev = null;
   
   // level should be compacted next and its compaction score. Score < 1 means
   // compaction is not strictly needed.
-  int compaction_score = 0;
+  double compaction_score = 0;
   int compaction_level = 0;
   
   // next file to compact based on seek states
-  private FileMetaData file_to_compact = null;
-  private int file_to_compact_level = 0;
+  FileMetaData file_to_compact = null;
+  int file_to_compact_level = 0;
   
   public Version(VersionSet vset) {
     this.vset = vset;
@@ -49,7 +49,7 @@ public class Version {
    * Number of files at the specified level.
    */
   public int NumFiles(int level) {
-    return files.get(level).size();
+    return files[level].size();
   }
   
   /**

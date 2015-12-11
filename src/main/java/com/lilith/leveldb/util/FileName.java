@@ -22,7 +22,7 @@ public class FileName {
     return String.format("%s/%06d.%s", name, number, suffix);
   }
   
-  public static String MakeLogName(String name, long number) {
+  public static String LogFileName(String name, long number) {
     return MakeFileName(name, number, "log");
   }
   

@@ -7,17 +7,19 @@ import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
 import com.lilith.leveldb.util.SkipList;
+import com.lilith.leveldb.version.InternalKey;
+import com.lilith.leveldb.version.InternalKeyComparator;
 /**
  * Storing key/value pairs in the memory.
  * @author Administrator
  *
  */
 public class MemTable {
-  private SkipList<Slice, Comparator<Slice>> table = null;
+  private SkipList<InternalKey, InternalKeyComparator> table = null;
   private AtomicInteger size = null;
   
-  public MemTable(Comparator<Slice> cmp) {
-    table = new SkipList<Slice, Comparator<Slice>>(cmp);
+  public MemTable(InternalKeyComparator cmp) {
+    table = new SkipList<InternalKey, InternalKeyComparator>(cmp);
     size = new AtomicInteger(0);
   }
   

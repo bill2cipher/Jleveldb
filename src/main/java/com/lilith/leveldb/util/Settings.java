@@ -19,4 +19,12 @@ public interface Settings {
   public static byte OP_TYPE_DELETE = 2;
   
   public static int NUM_LEVELS = 7;
+  
+  //Level-0 compaction is started when we hit this many files.
+  public static int L0_COMPACTION_TRIGGER = 4;
+  //Soft limit on number of level-0 files.  We slow down writes at this point.
+  public static int L0_SLoWDOWN_WRITES_TIGGER = 8;
+  //Maximum number of level-0 files.  We stop writes at this point.
+  public static int L0_STOP_WRITES_TRIGGER = 12;
+  
 }
