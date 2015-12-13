@@ -37,8 +37,8 @@ public class InternalKey {
   
   public void DecodeFrom(byte[] rep) {
     this.rep = rep;
-    this.key = Slice.DecodeLengthPrefix(rep, 0);
-    long seq_type = BinaryUtil.DecodeVarint64(rep, key.GetLength() + Settings.UINT32_SIZE);
+    this.key = new Slice(rep, 0, rep.length - Settings.UINT32_SIZE);
+    long seq_type = BinaryUtil.DecodeVarint64(rep, key.GetLength());
     this.op_type = (byte) (seq_type & 0XFF);
     this.seq = seq_type >> 8;        
   }
@@ -60,6 +60,10 @@ public class InternalKey {
   
   public int GetInternalKeySize() {
     return Encode().GetLength();
+  }
+  
+  public Slice GetUserKey() {
+    return key;
   }
 
 }

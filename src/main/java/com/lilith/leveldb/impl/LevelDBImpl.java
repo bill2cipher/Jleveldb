@@ -25,6 +25,7 @@ import com.lilith.leveldb.util.Range;
 import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.Util;
 import com.lilith.leveldb.util.WriteOptions;
+import com.lilith.leveldb.version.FileMetaData;
 import com.lilith.leveldb.version.InternalKeyComparator;
 import com.lilith.leveldb.version.Version;
 import com.lilith.leveldb.version.VersionSet;
@@ -45,6 +46,10 @@ public class LevelDBImpl extends LevelDB {
   private MemTable mem = null;
   private MemTable imm = null;
   
+  //Set of table files to protect from deletion because they are
+  // part of ongoing compactions.
+  private HashSet<Long> pending_outputs = null;
+  
   private InternalKeyComparator internal_comparator = null;
   
   
@@ -52,6 +57,7 @@ public class LevelDBImpl extends LevelDB {
     this.options = options;
     this.dbname = dbname;
     this.internal_comparator = new InternalKeyComparator(new SliceComparator());
+    this.pending_outputs = new HashSet<Long>();
   }
 
   @Override
@@ -197,7 +203,7 @@ public class LevelDBImpl extends LevelDB {
     FileName.SetCurrentFile(dbname, 1);
   }
   
-  private int RecoverLogFile(long log_number, VersionEdit edit) throws IOException, BadFormatException {
+  private long RecoverLogFile(long log_number, VersionEdit edit) throws IOException, BadFormatException {
     String fname = FileName.LogFileName(dbname, log_number);
     DataInputStream reader = new DataInputStream(new FileInputStream(fname));
     LogReader log_reader = new LogReader(reader, true, 0);
@@ -217,7 +223,15 @@ public class LevelDBImpl extends LevelDB {
       batch.InsertInto(mem);
       long last_seq = batch.Sequence() + batch.Count() - 1;
       if (last_seq > max_seq) max_seq = last_seq;
+      
+      if (mem.ApproximateMemoryUsage() > options.write_buffer_size) {
+        WriteLevel0Table(mem, edit, null);
+      }
+      mem = null;
     };
+    
+    if (mem != null) WriteLevel0Table(mem, edit, null);
+    return max_seq;
   }
   
   /**
@@ -236,7 +250,20 @@ public class LevelDBImpl extends LevelDB {
   }
   
   private void WriteLevel0Table(MemTable mem, VersionEdit edit, Version base) {
+    FileMetaData file_meta = new FileMetaData();
+    file_meta.number = version_set.NewFileNumber();
+    pending_outputs.add(file_meta.number);
+    MemIterator mem_iter = mem.Iterator();
+    BuildTable(dbname, options, mem_iter, file_meta);
+    pending_outputs.remove(file_meta.number);
     
+    int level = 0;
+    if (file_meta.file_size > 0) {
+      Slice min_user_key = file_meta.smallest.GetUserKey();
+      Slice max_user_key = file_meta.largest.GetUserKey();
+      if (base != null) level = base.PickLevelForMemTableOutput(min_user_key, max_user_key);
+      edit.AddFile(level, file_meta.number, file_meta.file_size, file_meta.smallest, file_meta.largest);
+    }
   }
   
   private void MakeRoomForWrite(boolean force) {

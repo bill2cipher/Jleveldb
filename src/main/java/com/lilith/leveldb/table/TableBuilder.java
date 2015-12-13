@@ -1,8 +1,13 @@
 package com.lilith.leveldb.table;
 
+import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
+import com.lilith.leveldb.version.FileMetaData;
 import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.impl.MemIterator;
+
 import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 
 
 public class TableBuilder {
@@ -69,5 +74,31 @@ public class TableBuilder {
    */
   public int FileSize() {
     return 0;
+  }
+  
+  /**
+   * Build a Table file from the content of mem_iter. The generated file will be named according to
+   * file_meta.number. On success, the rest of meta will be filled with meta data about the generated
+   * table. If no data is present in mem_iter, file_meta.file_size will be set to zero, and no Table
+   * file will be produced.
+   */
+  public static void BuildTable(String dbname, Options options, MemIterator mem_iter, FileMetaData file_meta) {
+    file_meta.file_size = 0;
+    mem_iter.SeekToFirst();
+    String table_name = FileName.TableFileName(dbname, file_meta.number);
+    
+    DataOutputStream writer = new DataOutputStream(new FileOutputStream(table_name));
+    TableBuilder builder = new TableBuilder(options, writer);
+    file_meta.smallest.DecodeFrom(mem_iter.Key());
+    
+    for (; mem_iter.Valide(); mem_iter.Next()) {
+      Slice key = mem_iter.key();
+      file_meta.largest.DecodeFrom(key);
+      builder.Add(key, mem_iter.Value());
+    }
+    
+    builder.Finish();
+    file_meta.file_size = builder.FileSize();
+    writer.close();
   }
 }
