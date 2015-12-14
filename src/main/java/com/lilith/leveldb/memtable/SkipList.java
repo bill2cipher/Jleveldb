@@ -1,7 +1,9 @@
-package com.lilith.leveldb.util;
+package com.lilith.leveldb.memtable;
 
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.lilith.leveldb.util.Random;
 
 
 public class SkipList<Key, Cmp extends Comparator<Key>> {
@@ -134,6 +136,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
   
   public class Iterator {
     private Node node = null;
+    
         
     // return true iff the iterator is positioned at a valid node.
     public boolean Valid() {

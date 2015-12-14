@@ -141,3 +141,4 @@ class Footer {
     index_handle.DecodeFrom(input.GetData(), input.GetOffset() + Settings.UINT32_SIZE * 2);
   }
 }
+

@@ -1,4 +1,4 @@
-package com.lilith.leveldb.impl;
+package com.lilith.leveldb.memtable;
 
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
-import com.lilith.leveldb.util.SkipList;
 import com.lilith.leveldb.version.InternalKeyComparator;
 /**
  * Storing key/value pairs in the memory.
@@ -18,7 +17,10 @@ public class MemTable {
   private AtomicInteger size = null;
   private KeyComparator comp = null;
   
-  private class KeyComparator implements Comparator<Slice> {
+  /**
+   * Comparator used to compare internal keys in memtable.
+   */
+  public class KeyComparator implements Comparator<Slice> {
     private InternalKeyComparator internal_comparator = null;
     public KeyComparator(InternalKeyComparator internal_comparator) {
       this.internal_comparator = internal_comparator;
@@ -29,7 +31,6 @@ public class MemTable {
       Slice sval2 = Slice.GetLengthPrefix(sval);
       return internal_comparator.compare(fval2, sval2);
     }
-    
   }
   
   public MemTable(InternalKeyComparator cmp) {
@@ -62,7 +63,7 @@ public class MemTable {
     table.Insert(new Slice(buffer));
     size.addAndGet(offset + value_size);
   }
-  
+
   /**
    * return an estimate of the number of bytes data in use by this
    * data structure.
@@ -82,24 +83,21 @@ public class MemTable {
    * @return
    */
   public MemIterator Iterator() {
-    return null;
+    return new MemIterator(table.new Iterator());
   }
   
   /**
    * if memtable contains a value for key, return it.
    * if memtable contains a deletion for key, return null.
    */
-  public Slice Get(Slice lookup) {
+  public Slice Get(LookupKey lookup) {
     SkipList<Slice, KeyComparator>.Iterator iter = table.new Iterator();
-    iter.Seek(lookup);
+    iter.Seek(lookup.MemTableKey());
     if (iter.Valid()) {
       Slice entry = iter.Key();
-      int entry_key_size = DecodeInternalKey(entry);
-      int lookup_key_size = DecodeInternalKey(lookup);
-      int cmp_rslt = BinaryUtil.CompareBytes(entry.GetData(), entry.GetOffset() + Settings.UINT32_SIZE, entry_key_size
-                                           , lookup.GetData(), lookup.GetOffset() + Settings.UINT32_SIZE, lookup_key_size);
+      int cmp_rslt = comp.compare(lookup.MemTableKey(), entry);
       if (cmp_rslt == 0) {
-        int entry_tag_offset = entry_key_size + Settings.UINT32_SIZE;
+        int entry_tag_offset = DecodeInternalKeySize(entry) + Settings.UINT32_SIZE;
         byte op_type = (byte) (BinaryUtil.DecodeVarint64(entry.GetData(), entry_tag_offset) & 0XFF);
         switch (op_type) {
         case Settings.OP_TYPE_DELETE:
@@ -112,7 +110,7 @@ public class MemTable {
     return null;
   }
   
-  public int DecodeInternalKey(Slice s) {
+  private int DecodeInternalKeySize(Slice s) {
     return BinaryUtil.DecodeVarint32(s.GetData(), s.GetOffset()) - Settings.UINT64_SIZE;
   }
 }

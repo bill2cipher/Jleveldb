@@ -1,6 +1,7 @@
-package com.lilith.leveldb.impl;
+package com.lilith.leveldb.memtable;
 
 import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.impl.WriteBatchExecutor;
 import com.lilith.leveldb.util.Settings;
 
 public class MemTableInserter implements WriteBatchExecutor {
@@ -26,5 +27,4 @@ public class MemTableInserter implements WriteBatchExecutor {
   public void Put(Slice key, Slice value) {
     mem_table.Add(sequence, Settings.OP_TYPE_VALUE, key, value);    
   }
-
 }

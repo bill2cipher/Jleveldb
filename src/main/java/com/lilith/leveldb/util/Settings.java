@@ -17,6 +17,7 @@ public interface Settings {
   
   public static byte OP_TYPE_VALUE = 1;
   public static byte OP_TYPE_DELETE = 2;
+  public static byte OP_TYPE_SEEK = 3;
   
   public static int NUM_LEVELS = 7;
   

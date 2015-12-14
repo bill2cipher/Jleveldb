@@ -4,10 +4,12 @@ import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.version.FileMetaData;
 import com.lilith.leveldb.api.Slice;
-import com.lilith.leveldb.impl.MemIterator;
+import com.lilith.leveldb.memtable.MemIterator;
 
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 
 public class TableBuilder {
@@ -81,20 +83,22 @@ public class TableBuilder {
    * file_meta.number. On success, the rest of meta will be filled with meta data about the generated
    * table. If no data is present in mem_iter, file_meta.file_size will be set to zero, and no Table
    * file will be produced.
+   * @throws IOException 
    */
-  public static void BuildTable(String dbname, Options options, MemIterator mem_iter, FileMetaData file_meta) {
+  public static void BuildTable(String dbname, Options options, MemIterator mem_iter, FileMetaData file_meta) throws IOException {
     file_meta.file_size = 0;
     mem_iter.SeekToFirst();
     String table_name = FileName.TableFileName(dbname, file_meta.number);
     
     DataOutputStream writer = new DataOutputStream(new FileOutputStream(table_name));
     TableBuilder builder = new TableBuilder(options, writer);
-    file_meta.smallest.DecodeFrom(mem_iter.Key());
+    Slice internal_key = mem_iter.Key();
+    file_meta.smallest.DecodeFrom(internal_key.GetData(), internal_key.GetOffset(), internal_key.GetLength());
     
     for (; mem_iter.Valide(); mem_iter.Next()) {
-      Slice key = mem_iter.key();
-      file_meta.largest.DecodeFrom(key);
-      builder.Add(key, mem_iter.Value());
+      internal_key = mem_iter.Key();
+      file_meta.largest.DecodeFrom(internal_key.GetData(), internal_key.GetOffset(), internal_key.GetLength());
+      builder.Add(internal_key, mem_iter.Value());
     }
     
     builder.Finish();

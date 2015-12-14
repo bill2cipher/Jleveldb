@@ -2,6 +2,8 @@ package com.lilith.leveldb.impl;
 
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
+import com.lilith.leveldb.memtable.MemTable;
+import com.lilith.leveldb.memtable.MemTableInserter;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
 

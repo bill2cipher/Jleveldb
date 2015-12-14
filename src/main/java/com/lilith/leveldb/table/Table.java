@@ -2,14 +2,14 @@ package com.lilith.leveldb.table;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.DecodeFailedException;
+import com.lilith.leveldb.util.ReadOptions;
 
 /**
  * A table is a sorted map from strings to strings. Tables are immutable and persistent.
  * A table may be safely accessed from multiple threads without external synchronization.
- * @author Administrator
- *
  */
 public class Table {
   
@@ -44,12 +44,37 @@ public class Table {
     this.rep = rep;
   }
   
+  /**
+   * Returns a new iterator over the table contents. The result of TableIterator is initially invalid.
+   * Caller must call one of seek methods on the iterator before using it.
+   */
+  public TableIterator TableIterator(ReadOptions options) {
+    return null;
+  }
+  
+  /**
+   * Given a key, return an approximate byte offset in the file where the data for that key begins.
+   * The returned value is in term of file bytes, and so includes effects like compression of the
+   * underlying data.
+   */
+  public int ApproximateOffsetOf(Slice key) {
+    return 0;
+  }
+  
   private void ReadMeta(Footer footer) throws IOException {
     BlockContent content = new BlockContent();
     Block.ReadBlock(rep.reader, footer.GetMetaIndexHandle(), content);
     Block meta_block = new Block(content);
     
     BlockIterator block_iter = meta_block.Iterator();
+  }
+  
+  private void ReadFilter(Slice filter) {
+    
+  }
+  
+  private TableIterator BlockReader(ReadOptions options, Slice key) {
+    
   }
   
   

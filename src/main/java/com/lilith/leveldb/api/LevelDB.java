@@ -33,7 +33,7 @@ public abstract class LevelDB {
     VersionEdit version_edit = impl.Recover();
     if (version_edit != null) {
       long log_number = impl.NewFileNumber();
-      DataOutputStream log_writer = new DataOutputStream(new FileOutputStream(FileName.MakeLogName(dbname, log_number)));
+      DataOutputStream log_writer = new DataOutputStream(new FileOutputStream(FileName.LogFileName(dbname, log_number)));
       version_edit.SetLogNumber(log_number);
       
       impl.logfile = log_writer;
@@ -67,17 +67,17 @@ public abstract class LevelDB {
   /**
    * Set the database entry for "key" to "value". Return true on success.
    */
-  public abstract boolean Put(WriteOptions options, Slice key, Slice value);
+  public abstract void Put(WriteOptions options, Slice key, Slice value);
   
   /**
    * Apply the specified updates to the database. Return true on success.
    */
-  public abstract boolean Delete(WriteOptions options, Slice key);
+  public abstract void Delete(WriteOptions options, Slice key);
   
   /**
    * Apply the specified updates to the database. Return true on success.
    */
-  public abstract boolean Write(WriteOptions options, WriteBatch updates);
+  public abstract void Write(WriteOptions options, WriteBatch updates);
   
   /**
    * If the database contains an entry for key store the corresponding value
@@ -94,6 +94,11 @@ public abstract class LevelDB {
    * on the iterator before using it).
    */
   public abstract DBIterator NewIterator(ReadOptions options);
+  
+  /**
+   * Return the next file number for table.
+   */
+  public abstract long NewFileNumber();
   
   /**
    * Return a handle to the current DB. Iterators created with this handle will all

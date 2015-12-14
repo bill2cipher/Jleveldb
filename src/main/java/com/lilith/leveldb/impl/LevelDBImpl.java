@@ -19,6 +19,8 @@ import com.lilith.leveldb.api.SliceComparator;
 import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.log.LogReader;
 import com.lilith.leveldb.log.LogWriter;
+import com.lilith.leveldb.memtable.MemIterator;
+import com.lilith.leveldb.memtable.MemTable;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Range;
@@ -61,21 +63,22 @@ public class LevelDBImpl extends LevelDB {
   }
 
   @Override
-  public boolean Put(WriteOptions options, Slice key, Slice value) {
-    // TODO Auto-generated method stub
-    return false;
+  public void Put(WriteOptions options, Slice key, Slice value) {
+    WriteBatch batch = new WriteBatch(0);
+    batch.Put(key, value);
+    Write(options, batch);
   }
 
   @Override
-  public boolean Delete(WriteOptions options, Slice key) {
-    // TODO Auto-generated method stub
-    return false;
+  public void Delete(WriteOptions options, Slice key) {
+    WriteBatch batch = new WriteBatch(0);
+    batch.Delete(key);
+    Write(options, batch);
   }
 
   @Override
-  public boolean Write(WriteOptions options, WriteBatch updates) {
-    // TODO Auto-generated method stub
-    return false;
+  public void Write(WriteOptions options, WriteBatch updates) {
+    writers.Add();
   }
 
   @Override
@@ -120,6 +123,11 @@ public class LevelDBImpl extends LevelDB {
     return false;
   }
   
+  @Override
+  public long NewFileNumber() {
+    return version_set.NewFileNumber();
+  }
+  
   /**
    * Recover the descriptor from persistent storage. May do a significant
    * amount of work to recover recently logged updates. Any changes to
@@ -127,7 +135,7 @@ public class LevelDBImpl extends LevelDB {
    * @throws IOException 
    * @throws BadFormatException 
    */
-  private VersionEdit Recover() throws IOException, BadFormatException {
+  public VersionEdit Recover() throws IOException, BadFormatException {
     if (!CheckDBOptions()) return null;
     
     version_set.Recover();
