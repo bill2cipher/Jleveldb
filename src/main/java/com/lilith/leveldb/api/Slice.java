@@ -98,5 +98,10 @@ public class Slice implements Comparable<Slice> {
   public int compareTo(Slice s) {
     return BinaryUtil.CompareBytes(data, offset, length, s.data, s.offset, s.length);
   }
+  
+  @Override
+  public int hashCode() {
+    return 0;
+  }
 }
 

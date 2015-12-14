@@ -1,7 +1,5 @@
 package com.lilith.leveldb.table;
 
-import java.util.Comparator;
-
 /**
  * A Cache is an interface that maps key to values. It has internal synchronization and may be safely
  * accessed concurrently from multiple threads. It may automatically evict entries to make room for
@@ -18,19 +16,19 @@ public interface Cache <Key, Value> {
   /**
    * Insert a mapping from key->value into the cache and assign it the specified charge against the total cache capacity.
    */
-  public void Insert(Key key, Value value, Comparator<Key> comp, int charge);
+  public void Insert(Key key, Value value, int charge, int hash);
   
   /**
    * If the cache has no mapping for key, returns null.
    * Else return an slice representing the mapping.
    */
-  public Value Lookup(Key key);
+  public Value Lookup(Key key, int hash);
   
   /**
    * If the cache contains entry for key, erase it. Not that the underlying entry
    * will be kept around until all existing reference to it has been released.
    */
-  public void Erase(Key key);
+  public void Erase(Key key, int hash);
   
   /**
    * Return a new numeric id. May be used by multiple clients who are sharing the same cache
