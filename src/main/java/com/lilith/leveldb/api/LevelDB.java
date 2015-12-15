@@ -2,7 +2,9 @@ package com.lilith.leveldb.api;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
+import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.impl.LevelDBImpl;
 import com.lilith.leveldb.impl.SnapShot;
 import com.lilith.leveldb.impl.WriteBatch;
@@ -12,7 +14,6 @@ import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Range;
 import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.WriteOptions;
-import com.lilith.leveldb.version.Version;
 import com.lilith.leveldb.version.VersionEdit;
 
 /**
@@ -27,8 +28,10 @@ public abstract class LevelDB {
    * @param options
    * @param name
    * @return
+   * @throws BadFormatException 
+   * @throws IOException 
    */
-  public static LevelDB Open(Options options, String dbname) {
+  public static LevelDB Open(Options options, String dbname) throws IOException, BadFormatException {
     LevelDBImpl impl = new LevelDBImpl(options, dbname);
     VersionEdit version_edit = impl.Recover();
     if (version_edit != null) {
@@ -36,8 +39,8 @@ public abstract class LevelDB {
       DataOutputStream log_writer = new DataOutputStream(new FileOutputStream(FileName.LogFileName(dbname, log_number)));
       version_edit.SetLogNumber(log_number);
       
-      impl.logfile = log_writer;
-      impl.logfile_num = log_number;
+      impl.log_file = log_writer;
+      impl.log_num = log_number;
       impl.log = new LogWriter(log_writer);
       impl.version_set.LogAndApply(version_edit);
       
@@ -66,18 +69,24 @@ public abstract class LevelDB {
   
   /**
    * Set the database entry for "key" to "value". Return true on success.
+   * @throws BadFormatException 
+   * @throws IOException 
    */
-  public abstract void Put(WriteOptions options, Slice key, Slice value);
+  public abstract void Put(WriteOptions options, Slice key, Slice value) throws IOException, BadFormatException;
   
   /**
    * Apply the specified updates to the database. Return true on success.
+   * @throws BadFormatException 
+   * @throws IOException 
    */
-  public abstract void Delete(WriteOptions options, Slice key);
+  public abstract void Delete(WriteOptions options, Slice key) throws IOException, BadFormatException;
   
   /**
    * Apply the specified updates to the database. Return true on success.
+   * @throws IOException 
+   * @throws BadFormatException 
    */
-  public abstract void Write(WriteOptions options, WriteBatch updates);
+  public abstract void Write(WriteOptions options, WriteBatch updates) throws IOException, BadFormatException;
   
   /**
    * If the database contains an entry for key store the corresponding value

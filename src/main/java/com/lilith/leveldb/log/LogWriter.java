@@ -49,6 +49,11 @@ public class LogWriter {
     }
   }
   
+  public void Close() throws IOException {
+    if (writer != null) writer.close();
+  }
+  
+  
   private int EmitPhysicalRecord(byte record_type, byte[] data, int offset, int size) throws IOException {
     crc32.update(data, offset, size);
     int checksum = (int) crc32.getValue();

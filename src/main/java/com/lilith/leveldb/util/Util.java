@@ -1,6 +1,12 @@
 package com.lilith.leveldb.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.ArrayList;
 
 public class Util {
@@ -38,5 +44,22 @@ public class Util {
     }
   }
   
+  public static FileLocker LockTable(String lockfile) throws FileNotFoundException {
+    try {
+      FileOutputStream file_stream = new FileOutputStream(lockfile);
+      FileChannel channel = file_stream.getChannel();
+      FileLock    file_lock = channel.tryLock();
+      return new FileLocker(file_stream, channel, file_lock); 
+    } catch (FileNotFoundException exp) {
+      Log.fatal("fetch or create lock file error: " + exp.getMessage());
+      return null;
+    } catch (ClosedChannelException exp) {
+      Log.error("lock file aquired by another thread: " + exp.getMessage());
+      return null;
+    } catch (IOException exp) {
+      Log.error("lock file failed: " + exp.getMessage());
+      return null;
+    }
+  }
   
 }

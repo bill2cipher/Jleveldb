@@ -3,6 +3,8 @@ package com.lilith.leveldb.version;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,6 +14,7 @@ import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.log.LogReader;
 import com.lilith.leveldb.log.LogWriter;
+import com.lilith.leveldb.table.TableCache;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
 import  com.lilith.leveldb.util.Settings;
@@ -48,8 +51,8 @@ public class VersionSet {
   private Version header = null;         // head of circular doubly-linked list of versions.
   private Version current = null;        // == header.prev
   
-  private LogWriter descriptor_file = null;
-  private DataOutputStream descriptor_log = null;  // the file associate with desc_writer
+  private LogWriter descriptor_log = null;
+  private DataOutputStream descriptor_file = null;  // the file associate with desc_writer
   
   
   public VersionSet(String dbname, Options options, TableCache table_cache, InternalKeyComparator icmp) {
@@ -83,9 +86,36 @@ public class VersionSet {
   /**
    * Apply edit to the current version to form a new descriptor that is both saved to
    * persistent state and installed as the new current version.
+   * @throws BadFormatException 
+   * @throws IOException 
    */
-  public void LogAndApply(VersionEdit edit) {
+  public void LogAndApply(VersionEdit edit) throws BadFormatException, IOException {
+    if (!edit.has_log_num) edit.SetLogNumber(log_num);
+    edit.SetNextFile(next_file_num);
+    edit.SetLastSequence(last_sequence);
     
+    Version version = new Version(this);
+    {
+      VersionBuilder builder = new VersionBuilder(this, current);
+      builder.Apply(edit);
+      builder.GetCurrentVersion(version);
+    }
+    CalCompactionScore(version);
+    
+    String new_manifest_file;
+    if (descriptor_log == null) {
+      new_manifest_file = FileName.DescriptorFileName(dbname, manifest_file_num);
+      edit.SetNextFile(next_file_num);
+      descriptor_file = new DataOutputStream(new FileOutputStream(new_manifest_file));
+      descriptor_log = new LogWriter(descriptor_file);
+      WriteSnapshot(descriptor_log);
+    }
+    
+    Slice encode_edit = edit.EncodeTo();
+    descriptor_log.AddRecord(encode_edit);
+    
+    AppendVersion(version);
+    log_num = edit.log_num;
   }
   
   /**
@@ -144,6 +174,33 @@ public class VersionSet {
     next_file_num = next_file + 1;
     last_sequence = last_seq_tmp;
     log_num = log_num_tmp;
+  }
+  
+  private void WriteSnapshot(LogWriter writer) {
+    VersionEdit edit = new VersionEdit();
+    edit.SetComparatorName(icmp.user_comparator.Name());
+    
+    // save compaction pointers
+    for (int level = 0; level < Settings.NUM_LEVELS; level++) {
+      if (!compact_pointers[level].isEmpty()) {
+        InternalKey internal_key = new InternalKey();
+        internal_key.DecodeFrom(compact_pointers[level].getBytes());
+        edit.SetCopmactionPointer(level, internal_key);
+      }
+    }
+    
+    // Save files
+    for (int level = 0; level < Settings.NUM_LEVELS; level++) {
+      ArrayList<FileMetaData> files = current.files[level];
+      Iterator<FileMetaData> file_iter = files.iterator();
+      while (file_iter.hasNext()) {
+        FileMetaData file_meta = file_iter.next();
+        edit.AddFile(level, file_meta.number, file_meta.file_size, file_meta.smallest, file_meta.largest);
+      }
+    }
+    
+    Slice encode_edit = edit.EncodeTo();
+    writer.AddRecord(encode_edit);
   }
   
   /**

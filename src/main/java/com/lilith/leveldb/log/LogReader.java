@@ -89,7 +89,9 @@ public class LogReader {
     }
   }
 
-  
+  public void Close() throws IOException {
+    if (reader != null) reader.close();
+  }
   
   /**
    * Returns the physical offset of the last record returned by ReadRecord.
