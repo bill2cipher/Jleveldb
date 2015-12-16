@@ -34,7 +34,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
    * @param key
    */
   public void Insert(Key key) {
-    Node[] prev = (SkipList<Key, Cmp>.Node[]) new Object[MAX_HEIGHT];
+    Node[] prev = (SkipList<Key, Cmp>.Node[]) new SkipList.Node[MAX_HEIGHT];
     Node x = FindGreaterOrEqual(key, prev);
     
     int height = RandomHeight();

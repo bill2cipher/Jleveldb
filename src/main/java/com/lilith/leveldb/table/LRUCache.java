@@ -69,7 +69,7 @@ public class LRUCache<Key extends Comparable<Key>, Value> implements Cache<Key, 
     private void Resize() {
       int new_length = 4;
       while (new_length < entries.length) new_length *= 2;
-      LinkedList<Entry>[] new_entries = (LinkedList<LRUCache<Key, Value>.Entry>[]) new Object[new_length];
+      LinkedList<Entry>[] new_entries = (LinkedList<LRUCache<Key, Value>.Entry>[]) new LinkedList[new_length];
 
       for (int i = 0; i < entries.length; i++) {
         LinkedList<Entry> val_list = entries[i];

@@ -3,11 +3,11 @@ package com.lilith.leveldb.version;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import com.lilith.leveldb.api.Slice;
@@ -17,20 +17,20 @@ import com.lilith.leveldb.log.LogWriter;
 import com.lilith.leveldb.table.TableCache;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
-import  com.lilith.leveldb.util.Settings;
+import com.lilith.leveldb.util.Settings;
 
 public class VersionSet {
   
-  private static final int TARGET_FILE_SIZE = 2 * 1048576;
+  public static final int TARGET_FILE_SIZE = 2 * 1048576;
 
   //Maximum bytes of overlaps in grandparent (i.e., level+2) before we
   //stop building a single file in a level->level+1 compaction.
-  private static final long MAX_GRANDPARENT_OVERLAY_BYTES = 10 * TARGET_FILE_SIZE;
+  public static final long MAX_GRANDPARENT_OVERLAY_BYTES = 10 * TARGET_FILE_SIZE;
 
   //Maximum number of bytes in all compacted files.  We avoid expanding
   //the lower level file set of a compaction if it would make the
   //total compaction cover more than this many bytes.
-  private static final long EXPANDED_COMPACTION_BYTESIZE_LIMIT = 25 * TARGET_FILE_SIZE;
+  public static final long EXPANDED_COMPACTION_BYTESIZE_LIMIT = 25 * TARGET_FILE_SIZE;
   
   private String dbname = null;          // db this version set associate with
   
@@ -127,12 +127,12 @@ public class VersionSet {
     // Read "CURRENT" file, which contains a pointer to the current manifest file
     byte[] buffer = new byte[512];
     DataInputStream cur_reader = new DataInputStream(new FileInputStream(FileName.CurrentFileName(dbname)));
-    int read_cnt = cur_reader.read(buffer, 0, 1024);
+    int read_cnt = cur_reader.read(buffer, 0, 512);
     cur_reader.close();
     if (buffer[read_cnt - 1] != '\n') throw new BadFormatException("CURRENT file does not end with newline");
     
     
-    String descname = dbname + "/" + new String(buffer, 0, read_cnt - 1);
+    String descname = new String(buffer, 0, read_cnt - 1);
     DataInputStream desc_reader = new DataInputStream(new FileInputStream(descname));
     
     long next_file = 0;
@@ -176,13 +176,14 @@ public class VersionSet {
     log_num = log_num_tmp;
   }
   
-  private void WriteSnapshot(LogWriter writer) {
+  private void WriteSnapshot(LogWriter writer) throws IOException {
     VersionEdit edit = new VersionEdit();
-    edit.SetComparatorName(icmp.user_comparator.Name());
-    
+    String comparator_name = icmp.user_comparator.toString();
+    edit.SetComparatorName(new Slice(comparator_name.getBytes()));
+
     // save compaction pointers
     for (int level = 0; level < Settings.NUM_LEVELS; level++) {
-      if (!compact_pointers[level].isEmpty()) {
+      if (!(compact_pointers[level] == null)) {
         InternalKey internal_key = new InternalKey();
         internal_key.DecodeFrom(compact_pointers[level].getBytes());
         edit.SetCopmactionPointer(level, internal_key);
@@ -233,14 +234,14 @@ public class VersionSet {
    * Return the number of Table files at the specified level.
    */
   public int NumLevelFiles(int level) {
-    return 0;
+    return current.files[level].size();
   }
   
   /**
    * Return the combined file size of all files at the specified level.
    */
   public long NumLevelBytes(int level) {
-    return 0;
+    return TotalFileSize(current.files[level]);
   }
   
   /**
@@ -346,7 +347,7 @@ public class VersionSet {
     version.compaction_score = best_score;
   }
   
-  private long TotalFileSize(ArrayList<FileMetaData> files) {
+  public static long TotalFileSize(List<FileMetaData> files) {
     long size = 0;
     Iterator<FileMetaData> iter = files.iterator();
     while (iter.hasNext()) {
@@ -358,11 +359,11 @@ public class VersionSet {
   /**
    * We could vary per level to reduce number of files?
    */
-  private int MaxFileSizeForLevel(int level) {
+  public static int MaxFileSizeForLevel(int level) {
     return TARGET_FILE_SIZE;
   }
   
-  static double MaxBytesForLevel(int level) {
+  public static double MaxBytesForLevel(int level) {
     // Note: the result for level zero is not really used since we set
     // the level-0 compaction threshold based on number of files.
     double result = 10 * 1048576.0;  // Result for both level-0 and level-1

@@ -10,7 +10,7 @@ import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
 
 public class VersionEdit {
-  private String comparator;
+  private Slice comparator;
   ArrayList<SimpleEntry<Integer, Long>> deleted_files = null;
   ArrayList<SimpleEntry<Integer, InternalKey>> compact_pointers = null;
   ArrayList<SimpleEntry<Integer, FileMetaData>> new_files = null;
@@ -34,6 +34,22 @@ public class VersionEdit {
   private final static int DeletedFile    = 6;
   private final static int NewFile        = 7;
   
+  public VersionEdit() {
+    this.deleted_files = new ArrayList<SimpleEntry<Integer, Long>>();
+    this.compact_pointers = new ArrayList<SimpleEntry<Integer, InternalKey>>();
+    this.new_files = new ArrayList<SimpleEntry<Integer, FileMetaData>>();
+    
+    this.has_log_num = false;
+    this.has_comparator = false;
+    this.has_next_file_num = false;
+    this.has_last_seq = false;
+    
+    this.log_num = 0;
+    this.next_file_num = 0;
+    this.last_seq = 0;
+    this.comparator = Slice.EmptySlice;
+  }
+  
   public void Clear() {
     this.log_num = 0;
     this.last_seq = 0;
@@ -44,13 +60,13 @@ public class VersionEdit {
     this.has_next_file_num = false;
     this.has_log_num = false;
     
-    comparator = "";
+    comparator = Slice.EmptySlice;
     
     deleted_files.clear();
     new_files.clear();
   }
   
-  public void SetComparatorName(String name) {
+  public void SetComparatorName(Slice name) {
     this.comparator = name;
     this.has_comparator = true;
   }
@@ -93,11 +109,10 @@ public class VersionEdit {
     byte[] buffer = new byte[GetApproximateSize()];
     int offset = 0;
     if (has_comparator) {
-      byte[] comp_content = comparator.getBytes();
       BinaryUtil.PutVarint32(buffer, offset, Comparator);
-      BinaryUtil.PutVarint32(buffer, offset + Settings.UINT32_SIZE, comp_content.length);
-      BinaryUtil.CopyBytes(comp_content, 0, comp_content.length, buffer, offset + Settings.UINT32_SIZE * 2);
-      offset += comp_content.length + Settings.UINT32_SIZE * 2;
+      BinaryUtil.PutVarint32(buffer, offset + Settings.UINT32_SIZE, comparator.GetLength());
+      BinaryUtil.CopyBytes(comparator.GetData(), comparator.GetOffset(), comparator.GetLength(), buffer, offset + Settings.UINT32_SIZE * 2);
+      offset += comparator.GetLength() + Settings.UINT32_SIZE * 2;
     }
     
     if (has_log_num) {
@@ -157,7 +172,7 @@ public class VersionEdit {
   
   public int GetApproximateSize() {
     int size = 0;
-    if (has_comparator) size += Settings.UINT32_SIZE;
+    if (has_comparator) size += Settings.UINT32_SIZE + Settings.UINT32_SIZE + comparator.GetLength();
     if (has_log_num)    size += Settings.UINT32_SIZE;
     if (has_next_file_num) size += Settings.UINT32_SIZE;
     if (has_last_seq) size += Settings.UINT32_SIZE;
@@ -201,7 +216,7 @@ public class VersionEdit {
     switch (val_type) {
     case Comparator:
       Slice str = Slice.GetLengthPrefix(data, offset);
-      this.comparator = new String(str.GetData(), str.GetOffset(), str.GetLength());
+      this.comparator = str;
       this.has_comparator = true;
       return Settings.UINT32_SIZE + str.GetLength();
     case LogNum:

@@ -38,6 +38,8 @@ import com.lilith.leveldb.version.VersionSet;
 import com.lilith.leveldb.version.VersionEdit;
 
 public class LevelDBImpl extends LevelDB {
+  
+  public static final int NUM_NONTABLE_CACHE_FILES = 10;
 
   public Options options = null;
   public String dbname = null;
@@ -68,10 +70,9 @@ public class LevelDBImpl extends LevelDB {
   private FileLocker locker = null;
 
   private class Writer {
-    WriteBatch batch = null;
-    boolean sync = false;
-    boolean done = false;
-
+    public WriteBatch batch = null;
+    public boolean sync = false;
+    public boolean done = false;
   }
 
   public LevelDBImpl(Options options, String dbname) {
@@ -80,6 +81,8 @@ public class LevelDBImpl extends LevelDB {
     this.internal_comparator = new InternalKeyComparator(new SliceComparator());
     this.pending_outputs = new HashSet<Long>();
     this.writers = new ArrayList<Writer>();
+    this.table_cache = new TableCache(dbname, options, options.max_open_files - NUM_NONTABLE_CACHE_FILES);
+    this.version_set = new VersionSet(dbname, options, table_cache, internal_comparator);
   }
 
   @Override
@@ -255,7 +258,8 @@ public class LevelDBImpl extends LevelDB {
 
   private void InitializeDB() throws IOException {
     VersionEdit edit = new VersionEdit();
-    edit.SetComparatorName(InternalKeyComparator.ComparatorName());
+    String comparator_name = InternalKeyComparator.ComparatorName();
+    edit.SetComparatorName(new Slice(comparator_name.getBytes()));
     edit.SetLogNumber(0);
     edit.SetNextFile(2);
     edit.SetLastSequence(0);
@@ -308,7 +312,7 @@ public class LevelDBImpl extends LevelDB {
     return max_seq;
   }
 
-  private void WriteLevel0Table(MemTable mem, VersionEdit edit, Version base) {
+  private void WriteLevel0Table(MemTable mem, VersionEdit edit, Version base) throws IOException {
     FileMetaData file_meta = new FileMetaData();
     file_meta.number = version_set.NewFileNumber();
     pending_outputs.add(file_meta.number);
@@ -328,6 +332,7 @@ public class LevelDBImpl extends LevelDB {
   }
 
   private void MakeRoomForWrite(boolean force) {
+    
   }
 
   /**
@@ -367,8 +372,7 @@ public class LevelDBImpl extends LevelDB {
 
   @Override
   public long NewFileNumber() {
-    // TODO Auto-generated method stub
-    return 0;
+    return version_set.NewFileNumber();
   }
 
   @Override

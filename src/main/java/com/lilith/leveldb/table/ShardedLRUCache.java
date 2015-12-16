@@ -13,7 +13,7 @@ public class ShardedLRUCache<Key extends Comparable<Key>, Value> implements Cach
   
   public ShardedLRUCache(int capacity) {
     cache_id.addAndGet(1);
-    shard = (LRUCache<Key, Value>[]) new Object[NumShards];
+    shard = (LRUCache<Key, Value>[]) new LRUCache[NumShards];
     int per_shard = (capacity + (NumShards - 1) / NumShards);
     
     for (int i = 0; i < NumShards; i++) {

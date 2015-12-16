@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.exceptions.DecodeFailedException;
 import com.lilith.leveldb.util.ReadOptions;
 
@@ -18,7 +19,7 @@ public class Table {
   private TableRep rep = null;
   
   // Build a table with the given file.
-  public static Table Open(DataInputStream reader, int file_size) throws IOException, DecodeFailedException {
+  public static Table Open(DataInputStream reader, int file_size) throws IOException, DecodeFailedException, BadFormatException {
     if (file_size < Footer.EncodedLength) return null;
     byte[] footer_data = new byte[Footer.EncodedLength];
     reader.read(footer_data, file_size - Footer.EncodedLength, Footer.EncodedLength);
@@ -74,10 +75,8 @@ public class Table {
   }
   
   private TableIterator BlockReader(ReadOptions options, Slice key) {
-    
+    return null;
   }
-  
-  
 }
 
 class TableRep {

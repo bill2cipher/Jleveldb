@@ -34,7 +34,7 @@ public class Version {
     this.compaction_level = -1;
     this.compaction_score = -1;
     
-    this.files = (ArrayList<FileMetaData>[]) new Object[Settings.NUM_LEVELS];
+    this.files = (ArrayList<FileMetaData>[]) new ArrayList[Settings.NUM_LEVELS];
     for (int i = 0; i < files.length; i++)
       files[i] = new ArrayList<FileMetaData>();
   }

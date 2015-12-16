@@ -5,12 +5,12 @@ import static org.junit.Assert.*;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class LogTest {
+public class VersionTest {
 
   @Ignore
   @Test
   public void test() {
-    fail("not implemented");
+    fail("Not yet implemented");
   }
 
 }
