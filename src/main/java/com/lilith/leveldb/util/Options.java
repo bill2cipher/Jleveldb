@@ -1,5 +1,11 @@
 package com.lilith.leveldb.util;
 
+import java.util.Comparator;
+
+import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.table.Block;
+import com.lilith.leveldb.table.Cache;
+
 public class Options {
   // if true, the database will be created if it is missing.
   public boolean creat_if_missing = true;
@@ -49,6 +55,30 @@ public class Options {
   // use the specified filter policy to reduce disk reads. Many applications will benefit from setting
   // BLOOM_FILTER_POLICY here
   public int filter_policy = Settings.BLOOM_FILTER_POLICY;
+  
+  // Control over blocks (user data is stored in a set of blocks, and
+  // a block is the unit of reading from disk).
+  // If non-NULL, use the specified cache for blocks.
+  // If NULL, leveldb will automatically create and use an 8MB internal cache.
+  // Default: NULL
+  public Cache<Slice, Block> block_cache = null;
+  
+  // Comparator used to define the order of keys in the table.
+  // Default: a comparator that uses lexicographic byte-wise ordering
+  //
+  // REQUIRES: The client must ensure that the comparator supplied
+  // here has the same name and orders keys *exactly* the same as the
+  // comparator provided to previous open calls on the same DB.
+  public Comparator<Slice> cmp = null;
+  
+  @Override
+  public Options clone() {
+    try {
+      return (Options) super.clone();
+    } catch (CloneNotSupportedException e) {
+      return null;
+    }
+  }
 }
 
 

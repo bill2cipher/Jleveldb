@@ -33,6 +33,10 @@ public class Block {
       throw new BadFormatException("too many restarts within block");
     this.restart_offset = offset + size - (1 + NumRestarts()) * Settings.UINT32_SIZE;
   }
+  
+  public int Size() {
+    return size;
+  }
 
   /**
    * Build a new iterator for this block
