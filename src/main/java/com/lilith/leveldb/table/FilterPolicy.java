@@ -1,5 +1,8 @@
 package com.lilith.leveldb.table;
 
+import java.util.ArrayList;
+
+import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.Settings;
 
 public abstract class FilterPolicy {
@@ -18,5 +21,18 @@ public abstract class FilterPolicy {
     }
   }
   
-    
+  /**
+   * Return the name of this policy. Note that if the filter encoding
+   * changes in an incompatible way, the name returned by this method
+   * must be changed. Otherwise, old incompatible filters may be
+   * passed to methods of this type.
+   */
+  public abstract Slice Name();
+  
+  /**
+   * keys[0, n-1] contains a list of keys (potentially with duplicates)
+   * that are ordered according to the user supplied comparator.
+   * return a filter that summarizes keys[0, n-1].
+   */
+  public abstract Slice CreateFilter(ArrayList<Slice> keys);
 }
