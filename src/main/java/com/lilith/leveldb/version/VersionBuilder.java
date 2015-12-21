@@ -33,7 +33,7 @@ public class VersionBuilder {
     }
 
     public int compare(FileMetaData ffile, FileMetaData sfile) {
-      int res = internal_comparator.compare(ffile.smallest, sfile.smallest);
+      int res = internal_comparator.Compare(ffile.smallest, sfile.smallest);
       if (res != 0) return res;
       else if (ffile.number == sfile.number) return 0;
       else if (ffile.number < sfile.number) return -1;
@@ -123,7 +123,7 @@ public class VersionBuilder {
     } else {
       ArrayList<FileMetaData> files = version.files[level];
       if (level > 0 && !files.isEmpty()) {
-        if (vset.icmp.compare(files.get(files.size() - 1).largest, file.smallest) >= 0)
+        if (vset.icmp.Compare(files.get(files.size() - 1).largest, file.smallest) >= 0)
           throw new BadFormatException("overlapping files");
       }
       version.files[level].add(file);

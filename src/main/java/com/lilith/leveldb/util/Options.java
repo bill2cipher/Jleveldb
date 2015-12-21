@@ -4,7 +4,9 @@ import java.util.Comparator;
 
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.table.Block;
+import com.lilith.leveldb.table.BloomFilterPolicy;
 import com.lilith.leveldb.table.Cache;
+import com.lilith.leveldb.table.FilterPolicy;
 
 public class Options {
   // if true, the database will be created if it is missing.
@@ -54,7 +56,7 @@ public class Options {
   
   // use the specified filter policy to reduce disk reads. Many applications will benefit from setting
   // BLOOM_FILTER_POLICY here
-  public int filter_policy = Settings.BLOOM_FILTER_POLICY;
+  public FilterPolicy filter_policy = BloomFilterPolicy.NewFilterPolicy(Settings.BITS_PER_KEY);
   
   // Control over blocks (user data is stored in a set of blocks, and
   // a block is the unit of reading from disk).

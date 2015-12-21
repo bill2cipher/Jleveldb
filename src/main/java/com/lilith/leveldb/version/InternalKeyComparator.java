@@ -46,12 +46,27 @@ public class InternalKeyComparator extends Comparator {
   @Override
   public Slice FindShortestSeparator(Slice start, Slice limit) {
     Slice user_key_st = InternalKey.ExtractUserKey(start);
-    Slice 
+    Slice user_key_lm = InternalKey.ExtractUserKey(limit);
+    Slice sep = user_comparator.FindShortestSeparator(user_key_st, user_key_lm);
+    if (sep.GetLength() < user_key_st.GetLength() && user_comparator.Compare(user_key_st, sep) < 0) {
+      byte[] buffer = new byte[sep.GetLength() + Settings.UINT64_SIZE];
+      BinaryUtil.CopyBytes(sep.GetData(), sep.GetOffset(), sep.GetLength(), buffer, 0);
+      BinaryUtil.PutVarint64(buffer, sep.GetLength(), (Settings.MaxSequenceNumber << 8) & (Settings.OP_TYPE_SEEK & 0XFF));
+      return new Slice(buffer);
+    }
+    return null;
   }
 
   @Override
   public Slice FindShortestSuccessor(Slice key) {
-    // TODO Auto-generated method stub
+    Slice user_key = InternalKey.ExtractUserKey(key);
+    Slice suc = user_comparator.FindShortestSuccessor(user_key);
+    if (suc.GetLength() < user_key.GetLength() && user_comparator.Compare(suc, user_key) < 0) {
+      byte[] buffer = new byte[suc.GetLength() + Settings.UINT64_SIZE];
+      BinaryUtil.CopyBytes(user_key.GetData(), user_key.GetOffset(), user_key.GetLength(), buffer, 0);
+      BinaryUtil.PutVarint64(buffer, user_key.GetLength(), (Settings.MaxSequenceNumber << 8) & (Settings.OP_TYPE_SEEK & 0XFF));
+      return new Slice(buffer);
+    }
     return null;
   }
 

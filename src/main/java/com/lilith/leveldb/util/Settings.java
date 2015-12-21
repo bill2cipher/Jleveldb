@@ -28,4 +28,12 @@ public interface Settings {
   //Maximum number of level-0 files.  We stop writes at this point.
   public static int L0_STOP_WRITES_TRIGGER = 12;
   
+  //We leave eight bits empty at the bottom so a type and sequence
+  //can be packed together into 64-bits.
+  public static long MaxSequenceNumber = ((0x1l << 56) - 1);
+  
+  public static int HashSeed = 0xBC9F1D34;
+  
+  public static int BITS_PER_KEY = 10;
+  
 }

@@ -62,4 +62,34 @@ public class Util {
     }
   }
   
+  public static int Hash(byte[] data, int offset, int size, int seed) {
+    // Similar to murmur hash
+    final int m = 0xc6a4a793;
+    final int r = 24;
+    final int limit = size + offset;
+    int h = seed ^ (size * m);
+
+    // Pick up four bytes at a time
+    while (offset + Settings.UINT32_SIZE <= limit) {
+      int w = BinaryUtil.DecodeVarint32(data, offset);
+      offset += Settings.UINT32_SIZE;
+      h += w;
+      h *= m;
+      h ^= (h >> 16);
+    }
+
+    // Pick up remaining bytes
+    switch (limit - offset) {
+      case 3:
+        h += data[2] << 16;
+      case 2:
+        h += data[1] << 8;
+      case 1:
+        h += data[0];
+        h *= m;
+        h ^= (h >> r);
+        break;
+    }
+    return h;
+  }
 }
