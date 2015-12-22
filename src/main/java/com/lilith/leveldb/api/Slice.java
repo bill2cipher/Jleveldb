@@ -1,6 +1,7 @@
 package com.lilith.leveldb.api;
 
 import com.lilith.leveldb.util.BinaryUtil;
+import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Settings;
 import com.lilith.leveldb.util.Util;
 
@@ -103,6 +104,15 @@ public class Slice implements Comparable<Slice> {
   @Override
   public int hashCode() {
     return Util.Hash(data, offset, length, 0);
+  }
+  
+  @Override
+  public Slice clone()  {
+    try {
+      return (Slice) super.clone();
+    } catch (CloneNotSupportedException e) {
+      return null;
+    }
   }
 }
 

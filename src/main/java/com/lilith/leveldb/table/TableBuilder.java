@@ -3,6 +3,7 @@ package com.lilith.leveldb.table;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.zip.CRC32;
 
 import com.lilith.leveldb.api.Slice;
@@ -49,7 +50,7 @@ public class TableBuilder {
       pending_handle = new BlockHandle();
       compressed_output = Slice.EmptySlice;
       
-      if (opt.filter_policy == Settings.NO_FILTER_POLICY)
+      if (opt.filter_policy == null)
         filter_block = null;
       else filter_block = new FilterBlockBuilder(opt.filter_policy);
     }
@@ -90,8 +91,9 @@ public class TableBuilder {
    * Add key, value pair to the table being constructed. 
    * @param key
    * @param value
+   * @throws IOException 
    */
-  public boolean Add(Slice key, Slice value) {
+  public boolean Add(Slice key, Slice value) throws IOException {
     if (rep.closed) return false;
     
     if (rep.pending_index_entry) {
@@ -112,6 +114,7 @@ public class TableBuilder {
     
     int size = rep.data_block.CurrentSizeEstimate();
     if (size >= rep.options.block_size) Flush();
+    return true;
   }
   
   /**

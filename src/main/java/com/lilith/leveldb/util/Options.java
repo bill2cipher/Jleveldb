@@ -1,7 +1,6 @@
 package com.lilith.leveldb.util;
 
-import java.util.Comparator;
-
+import com.lilith.leveldb.api.Comparator;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.table.Block;
 import com.lilith.leveldb.table.BloomFilterPolicy;
@@ -71,7 +70,7 @@ public class Options {
   // REQUIRES: The client must ensure that the comparator supplied
   // here has the same name and orders keys *exactly* the same as the
   // comparator provided to previous open calls on the same DB.
-  public Comparator<Slice> cmp = null;
+  public Comparator cmp = null;
   
   @Override
   public Options clone() {

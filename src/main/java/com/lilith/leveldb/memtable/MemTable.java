@@ -29,7 +29,7 @@ public class MemTable {
     public int compare(Slice fval, Slice sval) {
       Slice fval2 = Slice.GetLengthPrefix(fval);
       Slice sval2 = Slice.GetLengthPrefix(sval);
-      return internal_comparator.compare(fval2, sval2);
+      return internal_comparator.Compare(fval2, sval2);
     }
   }
   

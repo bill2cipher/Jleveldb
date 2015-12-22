@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import com.lilith.leveldb.api.Slice;
+import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.exceptions.DecodeFailedException;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.FileName;
@@ -15,21 +16,12 @@ public class TableCache {
   
   private String dbname = null;
   private Options options = null;
-  private Cache<Slice, TableAndFile> cache = null;
-
-  private class TableAndFile {
-    public Table table = null;
-    public DataInputStream reader = null;
-    public TableAndFile(Table table, DataInputStream reader) {
-      this.table = table;
-      this.reader = reader;
-    }
-  }
+  private Cache<Slice, Table> cache = null;
 
   public TableCache(String dbname, Options options, int entries) {
     this.dbname = dbname;
     this.options = options;
-    this.cache = new ShardedLRUCache<Slice, TableAndFile>(entries);
+    this.cache = new ShardedLRUCache<Slice, Table>(entries);
   }
 
   /**
@@ -37,8 +29,9 @@ public class TableCache {
    * found.
    * @throws DecodeFailedException 
    * @throws IOException 
+   * @throws BadFormatException 
    */
-  public TableAndFile Get(long file_num, int file_size) throws IOException, DecodeFailedException {
+  public Table Get(long file_num, int file_size) throws IOException, DecodeFailedException, BadFormatException {
     return FindTable(file_num, file_size);
   }
   
@@ -52,16 +45,15 @@ public class TableCache {
     cache.Erase(key, key.hashCode());
   }
 
-  private TableAndFile FindTable(long file_num, int file_size) throws IOException, DecodeFailedException {
+  private Table FindTable(long file_num, int file_size) throws IOException, DecodeFailedException, BadFormatException {
     byte[] buffer = new byte[Settings.UINT64_SIZE];
     BinaryUtil.PutVarint64(buffer, 0, file_num);
     Slice key = new Slice(buffer);
-    TableAndFile value = cache.Lookup(key, key.hashCode());
+    Table value = cache.Lookup(key, key.hashCode());
     if (value == null) {
       String table_name = FileName.LogFileName(dbname, file_num);
       DataInputStream reader = new DataInputStream(new FileInputStream(table_name));
-      Table table = Table.Open(reader, file_size);
-      value = new TableAndFile(table, reader);
+      value = Table.Open(reader, file_size, options);
       cache.Insert(key, value, 1, key.hashCode());
     }
     return value;

@@ -1,14 +1,14 @@
 package com.lilith.leveldb.table;
 
-import java.util.Comparator;
 
+import com.lilith.leveldb.api.Comparator;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
 
 public class BlockIterator {
-  private Comparator<Slice> cmp = null;
+  private Comparator cmp = null;
   private final byte[] data;
   private final int offset;
   private final int size;
@@ -21,7 +21,7 @@ public class BlockIterator {
   private final int restart_offset;
   private final int num_entries;
 
-  public BlockIterator(Comparator<Slice> cmp, byte[] data, int offset, int size, int restart_offset, int num_entries) {
+  public BlockIterator(Comparator cmp, byte[] data, int offset, int size, int restart_offset, int num_entries) {
     this.cur_offset = restart_offset;
     this.restart_index = num_entries;
     this.last_key = Slice.EmptySlice;
@@ -42,7 +42,7 @@ public class BlockIterator {
   }
   
   private int Compare(Slice fval, Slice sval) {
-    return cmp.compare(fval,  sval);        
+    return cmp.Compare(fval,  sval);        
   }
   
   private int GetRestartPoint(int index) {

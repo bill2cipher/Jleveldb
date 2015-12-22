@@ -83,7 +83,7 @@ public class Table {
 
   
   private void ReadMeta(Footer footer) throws IOException, BadFormatException {
-    if (rep.options.filter_policy == Settings.NO_FILTER_POLICY) return;
+    if (rep.options.filter_policy == null) return;
     
     BlockContent content = new BlockContent();
     Block.ReadBlock(rep.reader, rep.read_opt, footer.GetMetaIndexHandle(), content);
@@ -91,11 +91,11 @@ public class Table {
     
     SliceComparator comp = new SliceComparator();
     BlockIterator block_iter = meta_block.Iterator(comp);
-    FilterPolicy filter = FilterPolicy.GetFilterPolicy(rep.options.filter_policy);
+    FilterPolicy filter = rep.options.filter_policy;
     Slice filter_name = new Slice(filter.toString().getBytes());
     block_iter.Seek(filter_name);
     
-    if (block_iter.Valid() && comp.compare(block_iter.Key(), filter_name) == 0) {
+    if (block_iter.Valid() && comp.Compare(block_iter.Key(), filter_name) == 0) {
       ReadFilter(block_iter.Value());
       rep.filter_policy = filter;
     }
@@ -160,7 +160,7 @@ public class Table {
     return handle.GetOffset();
   }
 
-  private Slice InternalGet(ReadOptions options, Slice key) throws BadFormatException {
+  private Slice InternalGet(ReadOptions options, Slice key) throws BadFormatException, IOException {
     BlockIterator index_iter = rep.index_block.Iterator(rep.options.cmp);
     index_iter.Seek(key);
     

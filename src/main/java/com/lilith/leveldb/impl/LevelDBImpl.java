@@ -258,7 +258,7 @@ public class LevelDBImpl extends LevelDB {
 
   private void InitializeDB() throws IOException {
     VersionEdit edit = new VersionEdit();
-    String comparator_name = InternalKeyComparator.ComparatorName();
+    String comparator_name = internal_comparator.Name();
     edit.SetComparatorName(new Slice(comparator_name.getBytes()));
     edit.SetLogNumber(0);
     edit.SetNextFile(2);

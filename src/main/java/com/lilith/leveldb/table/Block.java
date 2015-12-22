@@ -2,8 +2,8 @@ package com.lilith.leveldb.table;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Comparator;
 
+import com.lilith.leveldb.api.Comparator;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
 import com.lilith.leveldb.util.BinaryUtil;
@@ -42,7 +42,7 @@ public class Block {
    * Build a new iterator for this block
    * @return
    */
-  public BlockIterator Iterator(Comparator<Slice> cmp) {
+  public BlockIterator Iterator(Comparator cmp) {
     return new BlockIterator(cmp, data, offset, size, restart_offset, NumRestarts());
   }
   
