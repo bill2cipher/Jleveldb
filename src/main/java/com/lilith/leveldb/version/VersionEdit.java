@@ -173,9 +173,9 @@ public class VersionEdit {
   public int GetApproximateSize() {
     int size = 0;
     if (has_comparator) size += Settings.UINT32_SIZE + Settings.UINT32_SIZE + comparator.GetLength();
-    if (has_log_num)    size += Settings.UINT32_SIZE;
-    if (has_next_file_num) size += Settings.UINT32_SIZE;
-    if (has_last_seq) size += Settings.UINT32_SIZE;
+    if (has_log_num)    size += Settings.UINT32_SIZE + Settings.UINT64_SIZE;
+    if (has_next_file_num) size += Settings.UINT32_SIZE + Settings.UINT64_SIZE;
+    if (has_last_seq) size += Settings.UINT32_SIZE + Settings.UINT64_SIZE;
     
     for (int i = 0; i < compact_pointers.size(); i++) {
       size += Settings.UINT32_SIZE * 3;

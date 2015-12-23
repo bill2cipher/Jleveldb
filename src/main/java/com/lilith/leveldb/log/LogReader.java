@@ -18,8 +18,9 @@ public class LogReader {
   
   private int last_record_offset = 0;     // offset of the last record returned by ReadRecord.
   private int start_of_buffer_offset = 0; // where to start the parse of next record in buffer
-  private int end_of_buffer_offset = 0;   // offset of the first location past the end of buffer.
+  private int end_of_buffer_offset = 0;
   private int initial_offset = 0;         // offset at which to start looking for the first record to return.
+  
   
   private final byte  EOF = LogFormat.MAX_RECORD_TYPE + 1;
   private final byte  BAD_RECORD = LogFormat.MAX_RECORD_TYPE + 2;
@@ -43,8 +44,8 @@ public class LogReader {
     this.eof = false;
     this.last_record_offset = 0;
     this.start_of_buffer_offset = 0;
-    this.end_of_buffer_offset = 0;
     this.crc32 = new CRC32();
+    this.end_of_buffer_offset = 0;
   }
   
   public byte[] ReadRecord() throws IOException {
@@ -130,8 +131,6 @@ public class LogReader {
       block_start_location += LogFormat.BLOCK_SIZE;
     }
     
-    end_of_buffer_offset = block_start_location;
-    
     if (block_start_location > 0) {
       try {
         reader.skip(block_start_location);
@@ -155,33 +154,29 @@ public class LogReader {
           continue;
         } else {
           start_of_buffer_offset = 0;
-          end_of_buffer_offset = 0;
           return EOF;
         }
       }
       
-      int crc32_val = BinaryUtil.DecodeVarint32(buffer, 0);
-      int length = BinaryUtil.DecodeVarint16(buffer, Settings.UINT32_SIZE);
-      byte record_type = buffer[Settings.UINT16_SIZE + Settings.UINT32_SIZE];
+      long crc32_val = BinaryUtil.DecodeVarint64(buffer, start_of_buffer_offset);
+      int length = BinaryUtil.DecodeVarint16(buffer, start_of_buffer_offset + Settings.UINT64_SIZE);
+      byte record_type = buffer[Settings.UINT16_SIZE + Settings.UINT64_SIZE + start_of_buffer_offset];
       
       if (LogFormat.HEADER_SIZE + length + start_of_buffer_offset > end_of_buffer_offset) {
-        end_of_buffer_offset = 0;
         start_of_buffer_offset = 0;
         if (!eof) return BAD_RECORD;
         return EOF;
       }
       
       if (record_type == LogFormat.ZERO && length == 0) {
-        end_of_buffer_offset = 0;
         start_of_buffer_offset = 0;
         return BAD_RECORD;
       }
       
       if (checksum) {
         crc32.update(buffer, start_of_buffer_offset + LogFormat.HEADER_SIZE, length);
-        int expected_crc32 = (int) crc32.getValue();
+        long expected_crc32 = crc32.getValue();
         if (crc32_val != expected_crc32) {
-          end_of_buffer_offset = 0;
           start_of_buffer_offset = 0;
           return BAD_RECORD;
         }

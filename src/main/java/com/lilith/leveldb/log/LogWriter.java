@@ -54,15 +54,17 @@ public class LogWriter {
   }
   
   
-  private int EmitPhysicalRecord(byte record_type, byte[] data, int offset, int size) throws IOException {
-    crc32.update(data, offset, size);
-    int checksum = (int) crc32.getValue();
+  private int EmitPhysicalRecord(byte record_type, byte[] data, int offset, int size) throws IOException { 
     int block_avail = LogFormat.BLOCK_SIZE - LogFormat.HEADER_SIZE - block_offset;
     int frag_size = block_avail > size ? size : block_avail;
+    
+    crc32.update(data, offset, frag_size);
+    long checksum = crc32.getValue();
+    
     byte[] buffer = new byte[LogFormat.HEADER_SIZE];
-    BinaryUtil.PutVarint32(buffer, 0, checksum);
-    BinaryUtil.PutVarint16(buffer, Settings.UINT32_SIZE, frag_size);
-    buffer[Settings.UINT16_SIZE + Settings.UINT32_SIZE] = record_type;
+    BinaryUtil.PutVarint64(buffer, 0, checksum);
+    BinaryUtil.PutVarint16(buffer, Settings.UINT64_SIZE, frag_size);
+    buffer[Settings.UINT16_SIZE + Settings.UINT64_SIZE] = record_type;
     writer.write(buffer, 0, LogFormat.HEADER_SIZE);
     
     block_offset += LogFormat.HEADER_SIZE + frag_size;

@@ -18,6 +18,7 @@ import com.lilith.leveldb.table.TableCache;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
 import com.lilith.leveldb.util.Settings;
+import com.lilith.leveldb.util.Util;
 
 public class VersionSet {
   
@@ -110,6 +111,7 @@ public class VersionSet {
       descriptor_log = new LogWriter(descriptor_file);
       WriteSnapshot(descriptor_log);
     }
+    FileName.SetCurrentFile(dbname, manifest_file_num);
     
     Slice encode_edit = edit.EncodeTo();
     descriptor_log.AddRecord(encode_edit);
@@ -133,7 +135,7 @@ public class VersionSet {
     
     
     String descname = new String(buffer, 0, read_cnt - 1);
-    DataInputStream desc_reader = new DataInputStream(new FileInputStream(descname));
+    DataInputStream desc_reader = new DataInputStream(new FileInputStream(dbname + "/" + descname));
     
     long next_file = 0;
     long last_seq_tmp = 0;
@@ -178,7 +180,7 @@ public class VersionSet {
   
   private void WriteSnapshot(LogWriter writer) throws IOException {
     VersionEdit edit = new VersionEdit();
-    String comparator_name = icmp.user_comparator.toString();
+    String comparator_name = icmp.user_comparator.Name();
     edit.SetComparatorName(new Slice(comparator_name.getBytes()));
 
     // save compaction pointers
@@ -215,7 +217,7 @@ public class VersionSet {
    * Return the current manifest file number 
    */
   public long ManifestFileNumber() {
-    return manifest_file_num++;
+    return manifest_file_num;
   }
   
   public long NewFileNumber() {
@@ -269,7 +271,7 @@ public class VersionSet {
    * Return the current log file number.
    */
   public long LogNumber() {
-    return log_num++;
+    return log_num;
   }
     
   /**

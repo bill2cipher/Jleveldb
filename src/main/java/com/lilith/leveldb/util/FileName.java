@@ -111,7 +111,7 @@ public class FileName {
     DataOutputStream writer = new DataOutputStream(new FileOutputStream(CurrentFileName(dbname)));
     String manifest = DescriptorFileName(dbname, num);
     if (manifest.startsWith(dbname + "/")) {
-      manifest.substring((dbname + "/").length(), manifest.length());
+      manifest = manifest.substring((dbname + "/").length(), manifest.length());
     }
     writer.write((manifest + "\n").getBytes());
     writer.flush();

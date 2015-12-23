@@ -224,7 +224,7 @@ public class LevelDBImpl extends LevelDB {
       if (!keep) {
         if (file_type == FileName.TABLE_FILE)
           table_cache.Evict(file_num);
-        new File(filenames.get(i)).delete();
+        new File(dbname + "/" + filenames.get(i)).delete();
       }
     }
   }

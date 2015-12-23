@@ -3,7 +3,6 @@ package com.lilith.leveldb.table;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.zip.CRC32;
 
 import com.lilith.leveldb.api.Slice;
@@ -179,7 +178,7 @@ public class TableBuilder {
     Footer footer = new Footer();
     footer.SetMetaIndexHandle(metaindex_block_handle);
     footer.SetIndexHandle(index_block_handle);
-    byte[] foot_buffer = new byte[footer.EncodedLength];
+    byte[] foot_buffer = new byte[Footer.EncodedLength];
     footer.EncodeTo(foot_buffer, 0);
     rep.writer.write(foot_buffer, 0, foot_buffer.length);
     rep.offset += foot_buffer.length;
