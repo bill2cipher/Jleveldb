@@ -40,6 +40,14 @@ public class Version {
   }
   
   /**
+   * Append to iters a sequence of iterators that will yield the contents of 
+   * this Version when merged together.
+   */
+  public void AddIterators(ReadOptions options, ArrayList<Iterator> iters) {
+    
+  }
+  
+  /**
    * Lookup the value for key. If found, return a slice representing
    * the value, else return null.
    */

@@ -10,6 +10,7 @@ import com.lilith.leveldb.exceptions.DecodeFailedException;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
+import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.Settings;
 
 public class TableCache {
@@ -27,12 +28,12 @@ public class TableCache {
   /**
    * If a seek to internal key in specified file finds an entry, null if not
    * found.
-   * @throws DecodeFailedException 
-   * @throws IOException 
-   * @throws BadFormatException 
    */
-  public Table Get(long file_num, int file_size) throws IOException, DecodeFailedException, BadFormatException {
-    return FindTable(file_num, file_size);
+  public Slice Get(ReadOptions options, long file_num, int file_size, Slice target)
+      throws IOException, DecodeFailedException, BadFormatException {
+    Table table = FindTable(file_num, file_size);
+    if (table == null) return null;
+    return table.InternalGet(options, target);
   }
   
   /**

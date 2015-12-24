@@ -22,16 +22,7 @@ import com.lilith.leveldb.util.Util;
 
 public class VersionSet {
   
-  public static final int TARGET_FILE_SIZE = 2 * 1048576;
 
-  //Maximum bytes of overlaps in grandparent (i.e., level+2) before we
-  //stop building a single file in a level->level+1 compaction.
-  public static final long MAX_GRANDPARENT_OVERLAY_BYTES = 10 * TARGET_FILE_SIZE;
-
-  //Maximum number of bytes in all compacted files.  We avoid expanding
-  //the lower level file set of a compaction if it would make the
-  //total compaction cover more than this many bytes.
-  public static final long EXPANDED_COMPACTION_BYTESIZE_LIMIT = 25 * TARGET_FILE_SIZE;
   
   private String dbname = null;          // db this version set associate with
   
@@ -243,7 +234,7 @@ public class VersionSet {
    * Return the combined file size of all files at the specified level.
    */
   public long NumLevelBytes(int level) {
-    return TotalFileSize(current.files[level]);
+    return VersionUtil.TotalFileSize(current.files[level]);
   }
   
   /**
@@ -337,8 +328,8 @@ public class VersionSet {
         //     high compression ratios, or lots of overwrites/deletions).
         score = version.files[level].size() / (double) Settings.L0_COMPACTION_TRIGGER;
       } else {
-        long level_bytes = TotalFileSize(version.files[level]);
-        score = level_bytes / (double) MaxBytesForLevel(level);
+        long level_bytes = VersionUtil.TotalFileSize(version.files[level]);
+        score = level_bytes / (double) VersionUtil.MaxBytesForLevel(level);
       }
       if (score > best_score) {
         best_level = level;
@@ -347,32 +338,5 @@ public class VersionSet {
     }
     version.compaction_level = best_level;
     version.compaction_score = best_score;
-  }
-  
-  public static long TotalFileSize(List<FileMetaData> files) {
-    long size = 0;
-    Iterator<FileMetaData> iter = files.iterator();
-    while (iter.hasNext()) {
-      size += iter.next().file_size;
-    }
-    return size;
-  }
-  
-  /**
-   * We could vary per level to reduce number of files?
-   */
-  public static int MaxFileSizeForLevel(int level) {
-    return TARGET_FILE_SIZE;
-  }
-  
-  public static double MaxBytesForLevel(int level) {
-    // Note: the result for level zero is not really used since we set
-    // the level-0 compaction threshold based on number of files.
-    double result = 10 * 1048576.0;  // Result for both level-0 and level-1
-    while (level > 1) {
-      result *= 10;
-      level--;
-    }
-    return result;
   }
 }

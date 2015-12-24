@@ -161,7 +161,7 @@ public class Table {
     return handle.GetOffset();
   }
 
-  private Slice InternalGet(ReadOptions options, Slice key) throws BadFormatException, IOException {
+  Slice InternalGet(ReadOptions options, Slice key) throws BadFormatException, IOException {
     BlockIterator index_iter = rep.index_block.Iterator(rep.options.cmp);
     index_iter.Seek(key);
     
@@ -171,7 +171,7 @@ public class Table {
     BlockHandle handle = new BlockHandle();
     handle.DecodeFrom(handle_value.GetData(), handle_value.GetOffset());
     
-    if (filter != null && !filter.KeyMayMatch(handle.GetOffset(), key));
+    if (filter != null && !filter.KeyMayMatch(handle.GetOffset(), key)) return null;
     BlockIterator block_iter = BlockReader(options, handle_value);
     block_iter.Seek(key);
     if (block_iter.Valid()) return block_iter.Value();
