@@ -77,7 +77,8 @@ public class Table {
    * Caller must call one of seek methods on the iterator before using it.
    */
   public TableIterator TableIterator(ReadOptions options) {
-    return null;
+    BlockIterator index_block_iter = rep.index_block.Iterator(rep.options.cmp);
+    return new TableIterator(options, index_block_iter, this);
   }
   
 
@@ -116,7 +117,7 @@ public class Table {
    * @throws BadFormatException 
    * @throws IOException 
    */
-  private BlockIterator BlockReader(ReadOptions options, Slice index_value) throws IOException, BadFormatException {
+  BlockIterator BlockReader(ReadOptions options, Slice index_value) throws IOException, BadFormatException {
     Cache<Slice, Block> block_cache = rep.options.block_cache;
     Block block = null;
     

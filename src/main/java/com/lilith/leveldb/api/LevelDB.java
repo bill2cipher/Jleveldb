@@ -47,7 +47,7 @@ public abstract class LevelDB {
       impl.DeleteObsoleteFiles();
       impl.MaybeScheduleCompaction();
     }
-    return null;
+    return impl;
   }
   
   /**

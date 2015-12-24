@@ -25,7 +25,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     random = new Random(SEED);
     header = NewNode(null, MAX_HEIGHT);
     compare = cmp;
-    max_height.set(1);
+    max_height = new AtomicInteger(1);
     for (int i = 0; i < MAX_HEIGHT; i++) header.SetNext(i, null);
   }
   
@@ -184,7 +184,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     
     public Node(Key key, int height) {
       this.key = key;
-      next = (SkipList<Key, Cmp>.Node[]) new Object[height];
+      next = (SkipList<Key, Cmp>.Node[]) new SkipList.Node[height];
     }
     
     public Node(Key key) {
@@ -198,7 +198,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     }
     
     public Node NextSync(int n) {
-    	synchronized(next[n]) {
+    	synchronized(next) {
     		return next[n];
     	}
     }
@@ -208,7 +208,7 @@ public class SkipList<Key, Cmp extends Comparator<Key>> {
     }
     
     public void SetNextSync(int n, Node node) {
-    	synchronized(next[n]) {
+    	synchronized(next) {
     		next[n] = node;
     	}
     }

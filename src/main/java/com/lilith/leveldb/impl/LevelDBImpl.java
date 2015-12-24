@@ -83,6 +83,7 @@ public class LevelDBImpl extends LevelDB {
     this.writers = new ArrayList<Writer>();
     this.table_cache = new TableCache(dbname, options, options.max_open_files - NUM_NONTABLE_CACHE_FILES);
     this.version_set = new VersionSet(dbname, options, table_cache, internal_comparator);
+    this.mem = new MemTable(internal_comparator);
   }
 
   @Override
