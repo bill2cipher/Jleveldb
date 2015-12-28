@@ -46,7 +46,7 @@ public class TableCache {
     cache.Erase(key, key.hashCode());
   }
 
-  private Table FindTable(long file_num, int file_size) throws IOException, DecodeFailedException, BadFormatException {
+  public Table FindTable(long file_num, int file_size) throws IOException, DecodeFailedException, BadFormatException {
     byte[] buffer = new byte[Settings.UINT64_SIZE];
     BinaryUtil.PutVarint64(buffer, 0, file_num);
     Slice key = new Slice(buffer);

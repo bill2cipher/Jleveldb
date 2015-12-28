@@ -65,5 +65,13 @@ public class InternalKey {
   public Slice GetUserKey() {
     return key;
   }
+  
+  public void Clone(InternalKey ikey) {
+    this.seq = ikey.seq;
+    this.op_type = ikey.op_type;
+    this.key = ikey.key;
+    this.updated = ikey.updated;
+    this.rep = ikey.rep;
+  }
 
 }

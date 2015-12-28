@@ -8,6 +8,10 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import com.lilith.leveldb.version.FileMetaData;
 
 public class Util {
   /**
@@ -42,6 +46,15 @@ public class Util {
     for (int i = 0; i < children.length; i++) {
       files.add(children[i].getName());
     }
+  }
+  
+  public static int TotalFileSize(List<FileMetaData> files) {
+    int size = 0;
+    Iterator<FileMetaData> iter = files.iterator();
+    while (iter.hasNext()) {
+      size += iter.next().file_size;
+    }
+    return size;
   }
   
   public static FileLocker LockTable(String lockfile) throws FileNotFoundException {

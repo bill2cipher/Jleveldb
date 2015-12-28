@@ -63,7 +63,7 @@ public class VersionBuilder {
       SimpleEntry<Integer, InternalKey> cmp_entry = cmp_iter.next();
       int cmp_level = cmp_entry.getKey();
       Slice cmp_val = cmp_entry.getValue().Encode();
-      vset.compact_pointers[cmp_level] = new String(cmp_val.GetData(), cmp_val.GetOffset(), cmp_val.GetLength());
+      vset.compact_pointers[cmp_level] = new Slice(cmp_val.GetData(), cmp_val.GetOffset(), cmp_val.GetLength());
     }
     
     // Delete files

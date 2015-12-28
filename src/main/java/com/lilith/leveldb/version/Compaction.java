@@ -1,10 +1,11 @@
 package com.lilith.leveldb.version;
 
+import java.util.ArrayList;
+
+import com.lilith.leveldb.api.Comparator;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.Settings;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.lilith.leveldb.util.Util;
 
 /**
  * A compaction encapsulates information about a compaction.
@@ -14,12 +15,12 @@ public class Compaction {
   private int level = 0;
 
   private VersionEdit edit = null;
-  private Version input_version = null;
+  Version input_version = null;
 
   private long max_output_file_size = 0;
-  private List<FileMetaData>[] inputs = null; // Each compaction reads inputs from
+  ArrayList<FileMetaData>[] inputs = null; // Each compaction reads inputs from
                                             // level and level + 1
-  private List<FileMetaData> grandparents = null; // State used to check for
+  ArrayList<FileMetaData> grandparents = null; // State used to check for
                                                   // number of overlapping
                                                   // grandparent files
 
@@ -31,18 +32,22 @@ public class Compaction {
 
   public Compaction(int level) {
     this.level = level;
-    this.max_output_file_size = VersionSet.MaxFileSizeForLevel(level);
+    this.max_output_file_size = VersionUtil.MaxFileSizeForLevel(level);
     this.input_version = null;
     this.grandparent_index = 0;
     this.seen_key = false;
     this.overlapping_bytes = 0;
     this.level_ptrs = new int[Settings.NUM_LEVELS];
     
-    this.inputs = (List<FileMetaData>[]) new Object[2];
+    this.inputs = (ArrayList<FileMetaData>[]) new ArrayList[2];
     this.grandparents = new ArrayList<FileMetaData>();
     
     for (int i = 0; i < Settings.NUM_LEVELS; i++) {
       level_ptrs[i] = 0;
+    }
+    
+    for (int i = 0; i < 2; i++) {
+      inputs[i] = new ArrayList<FileMetaData>();
     }
   }
 
@@ -90,14 +95,18 @@ public class Compaction {
   public boolean IsTrivialMove() {
     return NumInputFiles(0) == 1 &&
            NumInputFiles(1) == 0 &&
-           VersionSet.TotalFileSize(grandparents) <= VersionSet.MAX_GRANDPARENT_OVERLAY_BYTES;
+           Util.TotalFileSize(grandparents) <= VersionUtil.MAX_GRANDPARENT_OVERLAY_BYTES;
   }
 
   /**
    * Add all inputs to this compaction as delete operations to edit
    */
-  public boolean AddInputDeletions(VersionEdit edit) {
-    return false;
+  public void AddInputDeletions(VersionEdit edit) {
+    for (int which = 0; which < 2; which++) {
+      for (int i = 0; i < inputs[which].size(); i++) {
+        edit.DeleteFile(level + which, inputs[which].get(i).number);
+      }
+    }
   }
 
   /**
@@ -105,8 +114,24 @@ public class Compaction {
    * compaction is producing data in level + 1 for which no data exists in
    * levels greater than level + 1.
    */
-  public boolean IsBaseLevelForKey(Slice key) {
-    return false;
+  public boolean IsBaseLevelForKey(Slice user_key) {
+    Comparator user_cmp = input_version.vset.icmp.user_comparator;
+    for (int i = level + 2; i < Settings.NUM_LEVELS; i++) {
+      ArrayList<FileMetaData> files = input_version.files[i];
+      for (; level_ptrs[i] < files.size();) {
+        FileMetaData file = files.get(level_ptrs[i]);
+        if (user_cmp.Compare(user_key, file.largest.GetUserKey()) <= 0) {
+          // we have advanced far enough
+          if (user_cmp.Compare(user_key, file.smallest.GetUserKey()) >= 0) {
+            // key fails in this files' range, so definitely not base level
+            return false;
+          }
+          break;
+        }
+        level_ptrs[i]++;
+      }
+    }
+    return true;
   }
 
   /**
@@ -114,7 +139,22 @@ public class Compaction {
    * processing key
    */
   public boolean ShouldStopBefore(Slice key) {
-    return false;
+    InternalKeyComparator icmp = input_version.vset.icmp;
+    while (grandparent_index < grandparents.size() &&
+           icmp.Compare(key, grandparents.get(grandparent_index).largest.Encode()) > 0) {
+      if (seen_key) {
+        overlapping_bytes += grandparents.get(grandparent_index).file_size;
+      }
+      grandparent_index++;
+    }
+    seen_key = true;
+    
+    if (overlapping_bytes > VersionUtil.MAX_GRANDPARENT_OVERLAY_BYTES) {
+      overlapping_bytes = 0;
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -122,6 +162,6 @@ public class Compaction {
    * successful.
    */
   public void ReleaseInputs() {
-
+    // did nothing with java
   }
 }

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import com.lilith.leveldb.api.Comparator;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
+import com.lilith.leveldb.exceptions.DecodeFailedException;
 
 /**
  * An Iterator that provided the union of the data in children[0, n - 1].
@@ -32,7 +33,7 @@ public class TableMergeIterator {
     return current != null;
   }
   
-  public void SeekToFirst() throws BadFormatException, IOException {
+  public void SeekToFirst() throws BadFormatException, IOException, DecodeFailedException {
     for (int i = 0; i < children.size(); i++) {
       children.get(i).SeekToFirst();
     }
@@ -40,7 +41,7 @@ public class TableMergeIterator {
     direction = FORWARD;
   }
   
-  public void SeekToLast() throws BadFormatException, IOException {
+  public void SeekToLast() throws BadFormatException, IOException, DecodeFailedException {
     for (int i = 0; i < children.size(); i++) {
       children.get(i).SeekToLast();
     }
@@ -48,7 +49,7 @@ public class TableMergeIterator {
     direction = BACKWARD;
   }
   
-  public void Seek(Slice key) throws BadFormatException, IOException {
+  public void Seek(Slice key) throws BadFormatException, IOException, DecodeFailedException {
     for (int i = 0; i < children.size(); i++) {
       children.get(i).Seek(key);
     }
@@ -56,7 +57,7 @@ public class TableMergeIterator {
     direction = FORWARD;
   }
   
-  public void Next() throws BadFormatException, IOException {
+  public void Next() throws BadFormatException, IOException, DecodeFailedException {
     if (direction != FORWARD) {
       for (int i = 0; i < children.size(); i++) {
         TableIterator child = children.get(i);
@@ -71,7 +72,7 @@ public class TableMergeIterator {
     FindSmallest();
   }
   
-  public void Prev() throws BadFormatException, IOException {
+  public void Prev() throws BadFormatException, IOException, DecodeFailedException {
     if (direction != BACKWARD) {
       for (int i = 0; i < children.size(); i++) {
         TableIterator child = children.get(i);

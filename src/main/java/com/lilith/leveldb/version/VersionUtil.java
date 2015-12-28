@@ -20,16 +20,6 @@ public class VersionUtil {
   //total compaction cover more than this many bytes.
   public static final long EXPANDED_COMPACTION_BYTESIZE_LIMIT = 25 * TARGET_FILE_SIZE;
   
-  
-  public static long TotalFileSize(List<FileMetaData> files) {
-    long size = 0;
-    Iterator<FileMetaData> iter = files.iterator();
-    while (iter.hasNext()) {
-      size += iter.next().file_size;
-    }
-    return size;
-  }
-  
   /**
    * We could vary per level to reduce number of files?
    */

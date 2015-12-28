@@ -12,11 +12,17 @@ import java.util.Set;
 
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.exceptions.BadFormatException;
+import com.lilith.leveldb.exceptions.DecodeFailedException;
 import com.lilith.leveldb.log.LogReader;
 import com.lilith.leveldb.log.LogWriter;
+import com.lilith.leveldb.table.Table;
 import com.lilith.leveldb.table.TableCache;
+import com.lilith.leveldb.table.TableIterator;
+import com.lilith.leveldb.table.TableLevelIterator;
+import com.lilith.leveldb.table.TableMergeIterator;
 import com.lilith.leveldb.util.FileName;
 import com.lilith.leveldb.util.Options;
+import com.lilith.leveldb.util.ReadOptions;
 import com.lilith.leveldb.util.Settings;
 import com.lilith.leveldb.util.Util;
 
@@ -27,13 +33,14 @@ public class VersionSet {
   private String dbname = null;          // db this version set associate with
   
   private Options options = null;        // options for db versionset
-  private TableCache table_cache = null; // used for cache table content
+  
+  TableCache table_cache = null; // used for cache table content
   
   InternalKeyComparator icmp = null;
   
   // Pre-level key at which the next compaction at that level should start.
   // Either null or a valid InternalKey
-  String[] compact_pointers = new String[Settings.NUM_LEVELS];
+  Slice[] compact_pointers = new Slice[Settings.NUM_LEVELS];
   
   private long manifest_file_num = 0;    // unique id for current descriptor
   private long next_file_num     = 0;    // unique id for table file
@@ -178,7 +185,8 @@ public class VersionSet {
     for (int level = 0; level < Settings.NUM_LEVELS; level++) {
       if (!(compact_pointers[level] == null)) {
         InternalKey internal_key = new InternalKey();
-        internal_key.DecodeFrom(compact_pointers[level].getBytes());
+        Slice cmp_ptr = compact_pointers[level];
+        internal_key.DecodeFrom(cmp_ptr.GetData(), cmp_ptr.GetOffset(), cmp_ptr.GetLength());
         edit.SetCopmactionPointer(level, internal_key);
       }
     }
@@ -234,7 +242,7 @@ public class VersionSet {
    * Return the combined file size of all files at the specified level.
    */
   public long NumLevelBytes(int level) {
-    return VersionUtil.TotalFileSize(current.files[level]);
+    return Util.TotalFileSize(current.files[level]);
   }
   
   /**
@@ -264,28 +272,192 @@ public class VersionSet {
   public long LogNumber() {
     return log_num;
   }
+  
+  /**
+   * Stores the minimal range that covers all entries in inputs in smallest and largest.
+   */
+  public void GetRange(ArrayList<FileMetaData> inputs, InternalKey smallest, InternalKey largest) {
+    InternalKey tmp_small = null, tmp_large = null;
+    for (int i = 0; i < inputs.size(); i++) {
+      FileMetaData file = inputs.get(i);
+      if (i == 0) {
+        tmp_small = file.smallest;
+        tmp_large = file.largest;
+      } else {
+        if (icmp.Compare(file.smallest, smallest) < 0) tmp_small = file.smallest;
+        if (icmp.Compare(file.largest, largest) > 0) tmp_large = file.largest;
+      }
+    }
+    smallest.Clone(tmp_small);
+    largest.Clone(tmp_large);
+  }
+  
+  public void GetRange2(ArrayList<FileMetaData> inputs1, ArrayList<FileMetaData> inputs2
+                      , InternalKey smallest, InternalKey largest) {
+    ArrayList<FileMetaData> all = new ArrayList<FileMetaData>();
+    all.addAll(inputs2);
+    all.addAll(inputs2);
+    GetRange(all, smallest, largest);
+  }
     
   /**
    * Pick level and inputs for a new compaction. Return null if there is no
    * compaction to be done. Otherwise returns an object describes the compaction.
    */
   public Compaction PickCompaction() {
-    return null;
+    Compaction compaction = null;
+    int level = 0;
+    
+    boolean size_compaction = current.compaction_score >= 1;
+    boolean seek_compaction = current.file_to_compact != null;
+    if (size_compaction) {
+      level = current.compaction_level;
+      compaction = new Compaction(level);
+      // Pick the first file that comes after compaction_pointer_[level]
+      for (int i = 0; i < current.files[level].size(); i++) {
+        FileMetaData file = current.files[level].get(i);
+        if (compact_pointers[level] == null || icmp.Compare(file.largest.Encode(), compact_pointers[level]) > 0) {
+          compaction.inputs[0].add(file);
+          break;
+        }
+      }
+      
+      if (compaction.inputs[0].isEmpty()) {
+        // wrap around to the beginning of the key space
+        compaction.inputs[0].add(current.files[level].get(0));
+      }
+    } else if (seek_compaction) {
+      level = current.file_to_compact_level;
+      compaction = new Compaction(level);
+      compaction.inputs[0].add(current.file_to_compact);
+    } else {
+      return null;
+    }
+    
+    compaction.input_version = current;
+    // files in level 0 may overlap each other, so pick up all overlapping ones
+    if (level == 0) {
+      InternalKey smallest = new InternalKey(), largest = new InternalKey();
+      GetRange(compaction.inputs[0], smallest, largest);
+      compaction.inputs[0] = current.GetOverlappingInputs(level, smallest, largest);
+    }
+    SetupOtherInputs(compaction);
+    return compaction;
   }
   
   /**
    * Return a compaction object for compacting the range[begin,end] in the specified level.
    * Returns null if there is nothing in that level overlaps the specified range.
    */
-  public Compaction CompactRange(int level, Slice begin, Slice end) {
-    return null;
+  public Compaction CompactRange(int level, InternalKey begin, InternalKey end) {
+    ArrayList<FileMetaData> inputs = current.GetOverlappingInputs(level, begin, end);
+    if (inputs.isEmpty()) {
+      return null;
+    }
+    
+    // Avoid compacting too much in one shot in case the range is large.
+    // But we cannot do this for level0 since level0 files can overlap and we must not
+    // pick one file and drop another older file if the two files overlap
+    if (level > 0) {
+      long limit = VersionUtil.MaxFileSizeForLevel(level);
+      long total = 0;
+      for (int i = 0; i < inputs.size(); i++) {
+        total += inputs.get(i).file_size;
+        if (total >= limit) {
+          inputs.subList(0, i + 1);
+          break;
+        }
+      }
+    }
+    
+    Compaction c = new Compaction(level);
+    c.input_version = current;
+    c.inputs[0] = inputs;
+    SetupOtherInputs(c);
+    return c;
+  }
+  
+  public TableMergeIterator MakeInputIterator(Compaction c) throws IOException, DecodeFailedException, BadFormatException {
+    ReadOptions rd_options = new ReadOptions();
+    rd_options.verify_checksums = options.paranoid_checks;
+    rd_options.fill_cache = false;
+    
+    int space = (c.Level() == 0 ? c.inputs[0].size() + 1 : 2);
+    ArrayList<TableIterator> list = (ArrayList<TableIterator>) new ArrayList(space);
+    int num = 0;
+    for (int which = 0; which < 2; which++) {
+      if (c.inputs[which].isEmpty()) continue;
+      if (c.Level() + which == 0) {
+        Iterator<FileMetaData> file_iter = c.inputs[which].iterator(); 
+        while (file_iter.hasNext()) {
+          FileMetaData file = file_iter.next();
+          Table table = table_cache.FindTable(file.number, file.file_size);
+          list.set(num++, table.TableIterator(rd_options));
+        }
+      } else {
+        list.set(num++, new TableLevelIterator(icmp, c.inputs[which], table_cache, rd_options));
+      }
+    }
+    return new TableMergeIterator(icmp, list);
+  }
+  
+  public void SetupOtherInputs(Compaction c) {
+    final int level = c.Level();
+    InternalKey smallest = new InternalKey();
+    InternalKey largest = new InternalKey();
+    GetRange(c.inputs[0], smallest, largest);
+    c.inputs[1] = current.GetOverlappingInputs(level, smallest, largest);
+    
+    InternalKey all_start = new InternalKey();
+    InternalKey all_limit = new InternalKey();
+    GetRange2(c.inputs[0], c.inputs[1], all_start, all_limit);
+    
+    // see if we can grow the number of inputs in level without changing the number of
+    // level + 1 files we pick up
+    if (!c.inputs[0].isEmpty()) {
+      ArrayList<FileMetaData> expanded0 = current.GetOverlappingInputs(level, all_start, all_limit);
+      long inputs0_size = Util.TotalFileSize(c.inputs[0]);
+      long inputs1_size = Util.TotalFileSize(c.inputs[1]);
+      long expanded0_size = Util.TotalFileSize(expanded0);
+      if (expanded0.size() > c.inputs[0].size() &&
+          inputs1_size + expanded0_size < VersionUtil.EXPANDED_COMPACTION_BYTESIZE_LIMIT) {
+        InternalKey new_start = new InternalKey();
+        InternalKey new_limit = new InternalKey();
+        GetRange(expanded0, new_start, new_limit);
+        ArrayList<FileMetaData> expanded1 = current.GetOverlappingInputs(level + 1, new_start, new_limit);
+        if (expanded1.size() == c.inputs[1].size()) {
+          smallest = new_start;
+          largest = new_limit;
+          c.inputs[0] = expanded0;
+          c.inputs[1] = expanded1;
+          GetRange2(c.inputs[0], c.inputs[1], all_start, all_limit);
+        }
+      }
+    }
+    
+    if (level + 2 < Settings.NUM_LEVELS) {
+      c.grandparents = current.GetOverlappingInputs(level + 2, all_start, all_limit);
+    }
+    
+    compact_pointers[level] = largest.Encode();
+    c.Edit().SetCopmactionPointer(level, largest);
   }
   
   /**
    * Return the maximum overlapping data at next level for any file at a level >= 1.
    */
   public long MaxNextLevelOverlappingBytes() {
-    return 0;
+    long result = 0;
+    ArrayList<FileMetaData> overlaps;
+    for (int level = 1; level < Settings.NUM_LEVELS - 1; level++) {
+      for (int i = 0; i < current.files[level].size(); i++) {
+        FileMetaData file = current.files[level].get(i);
+        overlaps = current.GetOverlappingInputs(level + 1, file.smallest, file.largest);
+        int sum = Util.TotalFileSize(overlaps);
+        if (sum > result) result = sum;
+      }
+    }
+    return result;
   }
   
   public boolean NeedCompaction() {
@@ -307,9 +479,28 @@ public class VersionSet {
   /**
    * Return the approximate offset in the database of the data for "key" as
    * of version "v"
+   * @throws BadFormatException 
+   * @throws DecodeFailedException 
+   * @throws IOException 
    */
-  public long ApproximateOffsetOf(Version v, Slice key) {
-    return 0;
+  public long ApproximateOffsetOf(Version version, InternalKey ikey) throws IOException, DecodeFailedException, BadFormatException {
+    long result = 0;
+    for (int level = 0; level < Settings.NUM_LEVELS; level++) {
+      ArrayList<FileMetaData> files = version.files[level];
+      Iterator<FileMetaData> file_iter = files.iterator();
+      while (file_iter.hasNext()) {
+        FileMetaData file = file_iter.next();
+        if (icmp.Compare(file.largest, ikey) <= 0) {
+          result += file.file_size;
+        } else if (icmp.Compare(file.smallest, ikey) > 0) {
+          if (level > 0) break;
+        } else {
+          Table table = table_cache.FindTable(file.number, file.file_size);
+          result += table.ApproximateOffsetOf(ikey.Encode());
+        }
+      }
+    }
+    return result;
   }
   
   /**
@@ -328,7 +519,7 @@ public class VersionSet {
         //     high compression ratios, or lots of overwrites/deletions).
         score = version.files[level].size() / (double) Settings.L0_COMPACTION_TRIGGER;
       } else {
-        long level_bytes = VersionUtil.TotalFileSize(version.files[level]);
+        long level_bytes = Util.TotalFileSize(version.files[level]);
         score = level_bytes / (double) VersionUtil.MaxBytesForLevel(level);
       }
       if (score > best_score) {

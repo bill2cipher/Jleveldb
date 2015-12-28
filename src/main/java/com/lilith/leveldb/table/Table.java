@@ -78,7 +78,7 @@ public class Table {
    */
   public TableIterator TableIterator(ReadOptions options) {
     BlockIterator index_block_iter = rep.index_block.Iterator(rep.options.cmp);
-    return new TableIterator(options, index_block_iter, this);
+    return new TableIteratorImpl(options, index_block_iter, this);
   }
   
 
