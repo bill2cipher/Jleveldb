@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import com.lilith.leveldb.exceptions.BadFormatException;
+import com.lilith.leveldb.exceptions.DecodeFailedException;
 import com.lilith.leveldb.impl.LevelDBImpl;
 import com.lilith.leveldb.impl.SnapShot;
 import com.lilith.leveldb.impl.WriteBatch;
@@ -30,8 +31,9 @@ public abstract class LevelDB {
    * @return
    * @throws BadFormatException 
    * @throws IOException 
+   * @throws DecodeFailedException 
    */
-  public static LevelDB Open(Options options, String dbname) throws IOException, BadFormatException {
+  public static LevelDB Open(Options options, String dbname) throws IOException, BadFormatException, DecodeFailedException {
     LevelDBImpl impl = new LevelDBImpl(options, dbname);
     VersionEdit version_edit = impl.Recover();
     if (version_edit != null) {
@@ -72,21 +74,21 @@ public abstract class LevelDB {
    * @throws BadFormatException 
    * @throws IOException 
    */
-  public abstract void Put(WriteOptions options, Slice key, Slice value) throws IOException, BadFormatException;
+  public abstract void Put(WriteOptions options, Slice key, Slice value) throws IOException, BadFormatException, DecodeFailedException;
   
   /**
    * Apply the specified updates to the database. Return true on success.
    * @throws BadFormatException 
    * @throws IOException 
    */
-  public abstract void Delete(WriteOptions options, Slice key) throws IOException, BadFormatException;
+  public abstract void Delete(WriteOptions options, Slice key) throws IOException, BadFormatException, DecodeFailedException;
   
   /**
    * Apply the specified updates to the database. Return true on success.
    * @throws IOException 
    * @throws BadFormatException 
    */
-  public abstract void Write(WriteOptions options, WriteBatch updates) throws IOException, BadFormatException;
+  public abstract void Write(WriteOptions options, WriteBatch updates) throws IOException, BadFormatException, DecodeFailedException;
   
   /**
    * If the database contains an entry for key store the corresponding value
@@ -95,7 +97,7 @@ public abstract class LevelDB {
    * If there is no entry for key leave return null.
    * @return
    */
-  public abstract Slice Get(ReadOptions options, Slice key);
+  public abstract Slice Get(ReadOptions options, Slice key) throws IOException, DecodeFailedException, BadFormatException;
   
   /**
    * Return an iterator over the contents of the database. The result of 
@@ -144,7 +146,7 @@ public abstract class LevelDB {
    * compresses by a factor of ten, the returned sizes will be one-tenth the size of
    * the corresponding user data size.
    */
-  public abstract int[] GetApproximateSizes(Range[] range, int n);
+  public abstract long[] GetApproximateSizes(Range[] range, int n) throws IOException, DecodeFailedException, BadFormatException;
   
   /**
    * Compact the underlying storage for the key range [begin, end]. In particular, deleted
@@ -157,5 +159,5 @@ public abstract class LevelDB {
    * Therefore the following call will compact the entire database:
    * CompactRange(null, null).
    */
-  public abstract boolean CompactRange(Slice begin, Slice end);
+  public abstract boolean CompactRange(Slice begin, Slice end) throws IOException, BadFormatException, DecodeFailedException;
 }

@@ -18,6 +18,10 @@ public class InternalKeyComparator extends Comparator {
     return Compare(fkey.Encode(), skey.Encode());
   }
   
+  public Comparator GetUserComparator() {
+    return user_comparator;
+  }
+  
 
   /**
    * Order by:

@@ -13,7 +13,7 @@ public class ReadOptions {
   // If 'snapshot' is not null, read as of the supplied snapshot (which must belong
   // to the DB that is being read and which must not have been released). If 'snapshot'
   // is null, use an implicit snapshot of the state at the beginning of this read operation.
-  public SnapShot snapshot = null;
+  public long snapshot = 0;
 }
 
 
