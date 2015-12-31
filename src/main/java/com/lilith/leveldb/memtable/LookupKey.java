@@ -15,7 +15,7 @@ public class LookupKey {
     data = new byte[user_key.GetLength() + Settings.UINT64_SIZE + Settings.UINT32_SIZE];
     BinaryUtil.PutVarint32(data, 0, user_key.GetLength() + Settings.UINT64_SIZE);
     BinaryUtil.CopyBytes(user_key.GetData(), user_key.GetOffset(), user_key.GetLength(), data, Settings.UINT32_SIZE);
-    BinaryUtil.PutVarint64(data, user_key.GetLength() + Settings.UINT32_SIZE, (seq << 8) & Settings.OP_TYPE_SEEK);
+    BinaryUtil.PutVarint64(data, user_key.GetLength() + Settings.UINT32_SIZE, (seq << 8) | Settings.OP_TYPE_SEEK);
   }
   
   public Slice MemTableKey() {
@@ -27,6 +27,6 @@ public class LookupKey {
   }
   
   public Slice UserKey() {
-    return new Slice(data, Settings.UINT32_SIZE, data.length - Settings.UINT32_SIZE + Settings.UINT64_SIZE);
+    return new Slice(data, Settings.UINT32_SIZE, data.length - Settings.UINT32_SIZE - Settings.UINT64_SIZE);
   }
 }

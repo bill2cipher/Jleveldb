@@ -627,19 +627,19 @@ public class LevelDBImpl extends LevelDB {
     } else {
       snapshot = version_set.lastSequence();
     }
-    MemTable mem_tmp = mem;
-    MemTable imm_tmp = imm;
+
     Version current = version_set.Current();
+    Slice val = null;
     boolean have_stat_update = false;
     {
       LookupKey lkey = new LookupKey(key, snapshot);
-      Slice val = mem.Get(lkey);
+      val = mem.Get(lkey);
       if (val != null) {
         
       } else if (imm != null) {
         val = imm.Get(lkey);
       }
-      if (val != null) {
+      if (val == null) {
         val = current.Get(options, lkey);
         have_stat_update = true;
       }
@@ -648,7 +648,7 @@ public class LevelDBImpl extends LevelDB {
     if (have_stat_update) {
       MaybeScheduleCompaction();
     }
-    return null;
+    return val;
   }
 
   @Override
@@ -721,5 +721,15 @@ public class LevelDBImpl extends LevelDB {
       TEST_CompactRange(level, begin, end);
     }
     return true;
-  }  
+  }
+  
+  @Override
+  public void CloseDB() {
+    try {
+      log_file.close();
+      version_set.Close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 }

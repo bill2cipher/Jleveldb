@@ -37,7 +37,7 @@ public class InternalKeyComparator extends Comparator {
       long fnum = BinaryUtil.DecodeVarint64(fval.GetData(), fval.GetOffset() + fval.GetLength() - Settings.UINT64_SIZE);
       long snum = BinaryUtil.DecodeVarint64(sval.GetData(), sval.GetOffset() + sval.GetLength() - Settings.UINT64_SIZE);
       if (fnum > snum) res = -1;
-    else if (fnum < snum) res = 1;
+      else if (fnum < snum) res = 1;
     }
     return res;
   }
@@ -55,7 +55,7 @@ public class InternalKeyComparator extends Comparator {
     if (sep.GetLength() < user_key_st.GetLength() && user_comparator.Compare(user_key_st, sep) < 0) {
       byte[] buffer = new byte[sep.GetLength() + Settings.UINT64_SIZE];
       BinaryUtil.CopyBytes(sep.GetData(), sep.GetOffset(), sep.GetLength(), buffer, 0);
-      BinaryUtil.PutVarint64(buffer, sep.GetLength(), (Settings.MaxSequenceNumber << 8) & (Settings.OP_TYPE_SEEK & 0XFF));
+      BinaryUtil.PutVarint64(buffer, sep.GetLength(), (Settings.MaxSequenceNumber << 8) | (Settings.OP_TYPE_SEEK & 0XFF));
       return new Slice(buffer);
     }
     return null;
@@ -68,7 +68,7 @@ public class InternalKeyComparator extends Comparator {
     if (suc.GetLength() < user_key.GetLength() && user_comparator.Compare(suc, user_key) < 0) {
       byte[] buffer = new byte[suc.GetLength() + Settings.UINT64_SIZE];
       BinaryUtil.CopyBytes(user_key.GetData(), user_key.GetOffset(), user_key.GetLength(), buffer, 0);
-      BinaryUtil.PutVarint64(buffer, user_key.GetLength(), (Settings.MaxSequenceNumber << 8) & (Settings.OP_TYPE_SEEK & 0XFF));
+      BinaryUtil.PutVarint64(buffer, user_key.GetLength(), (Settings.MaxSequenceNumber << 8) | (Settings.OP_TYPE_SEEK & 0XFF));
       return new Slice(buffer);
     }
     return null;

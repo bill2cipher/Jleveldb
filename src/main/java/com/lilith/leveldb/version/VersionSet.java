@@ -530,4 +530,13 @@ public class VersionSet {
     version.compaction_level = best_level;
     version.compaction_score = best_score;
   }
+  
+  public void Close() {
+    try {
+      descriptor_file.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 }

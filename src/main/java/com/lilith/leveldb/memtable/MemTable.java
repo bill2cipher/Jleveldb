@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.lilith.leveldb.api.Slice;
 import com.lilith.leveldb.util.BinaryUtil;
 import com.lilith.leveldb.util.Settings;
+import com.lilith.leveldb.version.InternalKey;
 import com.lilith.leveldb.version.InternalKeyComparator;
 /**
  * Storing key/value pairs in the memory.
@@ -95,7 +96,11 @@ public class MemTable {
     iter.Seek(lookup.MemTableKey());
     if (iter.Valid()) {
       Slice entry = iter.Key();
-      int cmp_rslt = comp.compare(lookup.MemTableKey(), entry);
+      Slice internal_key = Slice.DecodeLengthPrefix(entry.GetData(), entry.GetOffset());
+      Slice user_key = InternalKey.ExtractUserKey(internal_key);
+      
+      int cmp_rslt = comp.internal_comparator.GetUserComparator().Compare(user_key, lookup.UserKey());
+      
       if (cmp_rslt == 0) {
         int entry_tag_offset = DecodeInternalKeySize(entry) + Settings.UINT32_SIZE;
         byte op_type = (byte) (BinaryUtil.DecodeVarint64(entry.GetData(), entry_tag_offset) & 0XFF);

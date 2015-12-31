@@ -160,4 +160,9 @@ public abstract class LevelDB {
    * CompactRange(null, null).
    */
   public abstract boolean CompactRange(Slice begin, Slice end) throws IOException, BadFormatException, DecodeFailedException;
+
+  public void CloseDB() {
+    // TODO Auto-generated method stub
+    
+  }
 }

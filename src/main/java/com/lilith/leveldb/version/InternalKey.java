@@ -53,7 +53,7 @@ public class InternalKey {
     if (updated == false) return new Slice(rep);
     rep = new byte[Settings.UINT64_SIZE + key.GetLength()];
     BinaryUtil.CopyBytes(key.GetData(), key.GetOffset(), key.GetLength(), rep, 0);
-    BinaryUtil.PutVarint64(rep, key.GetLength(), (seq << 8) & op_type);
+    BinaryUtil.PutVarint64(rep, key.GetLength(), (seq << 8) | op_type);
     this.updated = false;
     return new Slice(rep);
   }
